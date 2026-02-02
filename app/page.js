@@ -536,7 +536,7 @@ export default function DentalLeaveApp() {
                     1. 역할 분리
                 </h4>
                 <ul className="list-disc pl-4 space-y-1">
-                    <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">웹 (여기)</strong>: 조회, 직원 관리, 연차 수정/삭제</li>
+                    <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">웹 (여기)</strong>: 조회, 직원 관리, 연차 수정/삭제 <span className="text-xs text-red-500">(관리자)</span></li>
                     <li><strong className="text-green-600 dark:text-green-400">구글 시트</strong>: 연차 날짜 <strong>추가</strong> (드래그 입력)</li>
                 </ul>
             </div>
@@ -576,6 +576,7 @@ export default function DentalLeaveApp() {
                     3. 주의사항
                 </h4>
                 <ul className="list-disc pl-4 space-y-1">
+                    <li>구글 시트의 <strong>편집 권한</strong>이 있어야 관리자 기능이 활성화됩니다.</li>
                     <li>직원 이름은 <strong>수정 불가</strong>합니다. (데이터 연결 기준)</li>
                     <li>오타 발생 시 삭제 후 다시 추가해주세요.</li>
                     <li>시트 데이터는 <strong>1초 후 자동 동기화</strong>됩니다.</li>
