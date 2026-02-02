@@ -53,6 +53,21 @@ export default function DentalLeaveApp() {
     return { date: dateStr, type: 'FULL' }; // fallback
   };
 
+  const isValidDate = (dateStr) => {
+    if (!dateStr || dateStr.trim() === '') return false;
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return false;
+    
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return false;
+    
+    // Prevent date normalization (e.g., Feb 30 -> Mar 2)
+    const [_, year, month, day] = match;
+    return d.getFullYear() === parseInt(year) &&
+           d.getMonth() === parseInt(month) - 1 &&
+           d.getDate() === parseInt(day);
+  };
+
   const formatDate = (dateStr) => {
     const { date, type } = parseLeaveDate(dateStr);
     if (!date || isNaN(new Date(date).getTime())) return dateStr;
@@ -76,21 +91,42 @@ export default function DentalLeaveApp() {
         staff.leaves.forEach(leafObj => {
           const rawDateStr = leafObj.parsed;
           const { date, type } = parseLeaveDate(rawDateStr);
-          const d = new Date(date);
-          if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-            leavesList.push({
-              original: leafObj.original,
-              date: date,
-              type: type,
-              dateObj: d,
-              name: staff.name,
-              role: staff.role
-            });
+          
+          if (date && isValidDate(date)) {
+            const d = new Date(date);
+            if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+              leavesList.push({
+                original: leafObj.original,
+                date: date,
+                type: type,
+                dateObj: d,
+                name: staff.name,
+                role: staff.role
+              });
+            }
           }
         });
       }
     });
-    return leavesList.sort((a, b) => a.dateObj - b.dateObj);
+    
+    const sortedList = leavesList.sort((a, b) => a.dateObj - b.dateObj);
+    
+    const nameDateCounts = {};
+    sortedList.forEach(item => {
+      const key = `${item.name}_${item.date}`;
+      nameDateCounts[key] = (nameDateCounts[key] || 0) + 1;
+    });
+    
+    return sortedList.map(item => {
+      const key = `${item.name}_${item.date}`;
+      return {
+        ...item,
+        isDuplicate: nameDateCounts[key] > 1,
+        warning: nameDateCounts[key] > 1 
+          ? `${item.name}님이 이 날짜에 ${nameDateCounts[key]}번 등록되어 있습니다.` 
+          : null
+      };
+    });
   }, [staffData]);
 
   // 오늘 휴가자 추출
@@ -111,6 +147,29 @@ export default function DentalLeaveApp() {
     });
     return list;
   }, [staffData]);
+
+  // 잘못된 날짜 데이터 추출
+  const getInvalidLeaves = useCallback(() => {
+    const invalidList = [];
+    staffData.forEach(staff => {
+      if (staff.leaves) {
+        staff.leaves.forEach(leafObj => {
+          const { date } = parseLeaveDate(leafObj.parsed);
+          if (!date || !isValidDate(date)) {
+            invalidList.push({
+              name: staff.name,
+              original: leafObj.original,
+              reason: '날짜 형식이 잘못되었습니다.'
+            });
+          }
+        });
+      }
+    });
+    return invalidList;
+  }, [staffData]);
+
+  // 잘못된 데이터 계산
+  const invalidLeaves = getInvalidLeaves();
 
   // ==================================================================================
   // API 통신 함수
@@ -321,23 +380,29 @@ export default function DentalLeaveApp() {
     const d = new Date(dateStr);
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    const defaultDate = `${mm}/${dd}`;
+    const baseDate = `${mm}/${dd}`;
     
-    const dateInput = prompt("연차 날짜를 입력하세요:\n\n예: 01/15 (종일)\n예: 01/15 AM (오전반차)\n예: 01/15 PM (오후반차)", defaultDate);
-    if (!dateInput) return;
+    const typeInput = prompt("연차 타입을 입력하세요:\n\n• 공백 또는 Enter = 종일 연차\n• AM = 오전 반차\n• PM = 오후 반차", "");
+    if (typeInput === null) return;
     
-    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM))?$/i;
-    if (!datePattern.test(dateInput.trim())) {
-      alert("올바른 형식으로 입력해주세요.\n\n예: 01/15, 01/15 AM, 01/15 PM");
+    let typeUpper = typeInput.trim().toUpperCase();
+    
+    if (typeUpper === 'A') typeUpper = 'AM';
+    if (typeUpper === 'P') typeUpper = 'PM';
+    
+    if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
+      alert("올바른 타입을 입력해주세요.\n\n• 공백 = 종일\n• AM = 오전 반차\n• PM = 오후 반차");
       return;
     }
+    
+    const finalDate = typeUpper ? `${baseDate} ${typeUpper}` : baseDate;
     
     setStatusMsg("추가 중...");
     try {
       const res = await fetch('/api/calendar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: staff.name, date: dateInput.trim() })
+        body: JSON.stringify({ name: staff.name, date: finalDate })
       });
       if (!res.ok) {
         const data = await res.json();
@@ -468,17 +533,25 @@ export default function DentalLeaveApp() {
               
               return (
                 <div key={idx} 
-                     className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 ${isPast ? 'bg-[#F5F5F5] dark:bg-[#2A2A2A] opacity-60' : 'bg-[#FDFBF7] dark:bg-[#121212] border border-[#EBE5DD] dark:border-[#444444]'}`}
+                     className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 ${
+                       item.isDuplicate 
+                         ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700' 
+                         : isPast 
+                           ? 'bg-[#F5F5F5] dark:bg-[#2A2A2A] opacity-60' 
+                           : 'bg-[#FDFBF7] dark:bg-[#121212] border border-[#EBE5DD] dark:border-[#444444]'
+                     }`}
                 >
                   <div 
                     onClick={() => handleLeaveClick(item.name, item.original, item.date)}
                     className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-70 transition-opacity"
+                    title={item.warning || undefined}
                   >
-                    <span className={`text-sm font-bold ${isPast ? 'text-gray-500 dark:text-gray-400' : 'text-[#8D7B68] dark:text-[#A4907C]'}`}>
+                    {item.isDuplicate && <span className="shrink-0">⚠️</span>}
+                    <span className={`text-sm font-bold ${item.isDuplicate ? 'text-red-700 dark:text-red-300' : isPast ? 'text-gray-500 dark:text-gray-400' : 'text-[#8D7B68] dark:text-[#A4907C]'}`}>
                       {formatDate(item.original)}
                     </span>
                     <div className="h-4 w-[1px] bg-[#EBE5DD] dark:bg-[#444444]"></div>
-                    <span className="text-[#5C5552] dark:text-[#E0E0E0] font-medium">{item.name}</span>
+                    <span className={`font-medium ${item.isDuplicate ? 'text-red-700 dark:text-red-300' : 'text-[#5C5552] dark:text-[#E0E0E0]'}`}>{item.name}</span>
                     <span className="text-xs text-[#A4907C] dark:text-[#C4B09C] bg-white dark:bg-[#2C2C2C] px-1.5 py-0.5 rounded border border-[#EBE5DD] dark:border-[#444444]">{item.role}</span>
                     {item.type !== 'FULL' && (
                         <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${badgeColor}`}>{item.type}</span>
@@ -491,7 +564,11 @@ export default function DentalLeaveApp() {
                     {session?.isAdmin && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleLeaveDelete(item.name, item.original); }}
-                        className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-[#DBCCC0] hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                        className={`p-1.5 rounded-full transition-colors ${
+                          item.isDuplicate
+                            ? 'hover:bg-red-200 dark:hover:bg-red-800/50 text-red-500 hover:text-red-600'
+                            : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-[#DBCCC0] hover:text-red-500 dark:hover:text-red-400'
+                        }`}
                         title="삭제"
                       >
                         <X className="w-4 h-4" />
@@ -527,24 +604,40 @@ export default function DentalLeaveApp() {
     const getLeavesForDay = (day) => {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const list = [];
+      
       staffData.forEach(staff => {
         if (staff.leaves) {
-            staff.leaves.forEach(leafObj => {
-                const leaf = leafObj.parsed;
-                const parsed = parseLeaveDate(leaf);
-                if (parsed.date === dateStr) {
-                    list.push({ 
-                        name: staff.name, 
-                        role: staff.role,
-                        type: parsed.type,
-                        original: leafObj.original
-                    });
-                }
-            });
+          staff.leaves.forEach(leafObj => {
+            const leaf = leafObj.parsed;
+            const parsed = parseLeaveDate(leaf);
+            
+            if (parsed.date && isValidDate(parsed.date) && parsed.date === dateStr) {
+              list.push({ 
+                name: staff.name, 
+                role: staff.role,
+                type: parsed.type,
+                original: leafObj.original
+              });
+            }
+          });
         }
       });
-      return list;
+      
+      const nameCounts = {};
+      list.forEach(item => {
+        nameCounts[item.name] = (nameCounts[item.name] || 0) + 1;
+      });
+      
+      return list.map(item => ({
+        ...item,
+        isDuplicate: nameCounts[item.name] > 1,
+        warning: nameCounts[item.name] > 1 
+          ? `${item.name}님이 이 날짜에 ${nameCounts[item.name]}번 등록되어 있습니다.` 
+          : null
+      }));
     };
+
+
 
     const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -562,6 +655,28 @@ export default function DentalLeaveApp() {
                 <button onClick={() => moveMonth(1)} className="p-1 hover:bg-[#F2EBE5] dark:hover:bg-[#2D2D2D] rounded-full text-[#8D7B68] dark:text-[#A4907C] transition-colors"><ChevronRight /></button>
             </div>
         </div>
+
+        {session?.isAdmin && invalidLeaves.length > 0 && (
+          <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl">
+            <div className="flex items-start gap-3 text-amber-800 dark:text-amber-300">
+              <span className="text-xl shrink-0">⚠️</span>
+              <div className="flex-1">
+                <p className="font-bold text-sm mb-2">잘못된 날짜 형식이 감지되었습니다</p>
+                <ul className="text-xs space-y-1 mb-2">
+                  {invalidLeaves.slice(0, 5).map((item, idx) => (
+                    <li key={idx}>
+                      • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-[10px]">"{item.original}"</code>
+                    </li>
+                  ))}
+                  {invalidLeaves.length > 5 && (
+                    <li className="opacity-70">... 외 {invalidLeaves.length - 5}건</li>
+                  )}
+                </ul>
+                <p className="text-xs opacity-80">💡 구글 시트에서 해당 데이터를 수정해주세요. (형식: 01/15, 01/15 AM, 01/15 PM)</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 달력 그리드 */}
         <div className="grid grid-cols-7 border-t border-l border-[#F0EAE4] dark:border-[#333333]">
@@ -606,13 +721,18 @@ export default function DentalLeaveApp() {
                         <div className="mt-1 flex flex-col gap-1 overflow-y-auto max-h-[calc(100%-28px)] custom-scrollbar">
                             {leaves.map((person, idx) => (
                                 <div key={idx} 
-                                     className="text-xs bg-[#F2EBE5] dark:bg-[#2D2D2D] text-[#5C5552] dark:text-[#E0E0E0] px-1.5 py-0.5 rounded border border-[#EBE5DD] dark:border-[#444444] flex items-center justify-between group/item cursor-pointer hover:bg-[#EBE5DD] dark:hover:bg-[#3D3D3D] transition-colors"
+                                     className={`text-xs px-1.5 py-0.5 rounded border flex items-center justify-between group/item cursor-pointer transition-colors
+                                       ${person.isDuplicate
+                                         ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
+                                         : 'bg-[#F2EBE5] dark:bg-[#2D2D2D] text-[#5C5552] dark:text-[#E0E0E0] border-[#EBE5DD] dark:border-[#444444] hover:bg-[#EBE5DD] dark:hover:bg-[#3D3D3D]'
+                                       }`}
                                 >
                                     <div 
                                         onClick={() => handleLeaveClick(person.name, person.original, dateStr)}
                                         className="flex-1 flex items-center gap-1 min-w-0 truncate"
-                                        title={`${person.name} (${person.role}) - 클릭하여 수정`}
+                                        title={person.warning || `${person.name} (${person.role}) - 클릭하여 수정`}
                                     >
+                                        {person.isDuplicate && <span className="shrink-0">⚠️</span>}
                                         <strong className="truncate">{person.name}</strong>
                                         <span className="opacity-70 text-[10px] shrink-0">{person.role}</span>
                                         {person.type === 'AM' && <span className="text-[9px] bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200 px-1 rounded shrink-0">AM</span>}
@@ -621,7 +741,11 @@ export default function DentalLeaveApp() {
                                     {session?.isAdmin && (
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handleLeaveDelete(person.name, person.original); }}
-                                            className="opacity-0 group-hover/item:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-[#DBCCC0] hover:text-red-500 dark:hover:text-red-400 transition-opacity ml-1 shrink-0"
+                                            className={`opacity-0 group-hover/item:opacity-100 p-0.5 rounded transition-opacity ml-1 shrink-0
+                                              ${person.isDuplicate 
+                                                ? 'hover:bg-red-200 dark:hover:bg-red-800/50 text-red-500 hover:text-red-600' 
+                                                : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-[#DBCCC0] hover:text-red-500 dark:hover:text-red-400'
+                                              }`}
                                             title="삭제"
                                         >
                                             <X className="w-3 h-3" />
@@ -666,7 +790,11 @@ export default function DentalLeaveApp() {
                 <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2">
                     2. 연차 등록 및 관리
                 </h4>
-                <p className="mb-2">구글 시트의 <span className="bg-[#F2EBE5] dark:bg-[#2D2D2D] px-1 rounded text-xs font-mono">2026년</span> 탭에 날짜를 입력하세요.</p>
+                <p className="mb-2">두 가지 방법으로 가능합니다:</p>
+                <ul className="list-disc pl-4 space-y-1 mb-3 text-xs">
+                    <li><strong>웹에서 추가</strong>: 달력 날짜에 마우스를 올리고 <span className="bg-[#EBE5DD] dark:bg-[#444444] px-1 rounded font-bold text-[#8D7B68] dark:text-[#A4907C]">+</span> 버튼 클릭</li>
+                    <li><strong>구글 시트</strong>: 빈 칸에 날짜 직접 입력 (예: 01/15)</li>
+                </ul>
                 <div className="bg-[#FDFBF7] dark:bg-[#121212] p-3 rounded-lg border border-[#F0EAE4] dark:border-[#333333] space-y-2 font-mono text-xs mb-3">
                     <div className="flex justify-between">
                         <span>종일 연차</span>
@@ -682,16 +810,30 @@ export default function DentalLeaveApp() {
                     </div>
                 </div>
                 <p className="text-xs text-[#5C5552] dark:text-[#A0A0A0] bg-[#F2EBE5] dark:bg-[#2D2D2D] p-2 rounded">
-                    💡 <strong>Tip:</strong> 캘린더의 날짜를 클릭하면 <strong>수정/삭제</strong>가 가능합니다!
+                    💡 <strong>Tip:</strong> 날짜 셀에 마우스를 올리면 + 버튼이 나타납니다. 클릭하여 <strong>수정/삭제</strong>도 가능합니다!
                 </p>
             </div>
 
             <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
 
-            {/* 섹션 3 */}
+            {/* 섹션 3: 데이터 확인 및 경고 */}
             <div>
                 <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2">
-                    3. 주의사항
+                    3. 데이터 확인 및 경고
+                </h4>
+                <ul className="list-disc pl-4 space-y-1">
+                    <li><span className="text-red-500 font-bold">⚠️ 경고</span>: 중복 입력 시 빨간색으로 표시됩니다.</li>
+                    <li><span className="text-amber-500 font-bold">⚠️ 확인 필요</span>: 날짜 형식이 잘못되면 상단에 표시됩니다.</li>
+                    <li>잘못된 데이터는 달력 우측 상단에도 표시됩니다.</li>
+                </ul>
+            </div>
+
+            <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
+
+            {/* 섹션 4 */}
+            <div>
+                <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2">
+                    4. 주의사항
                 </h4>
                 <ul className="list-disc pl-4 space-y-1">
                     <li>구글 시트의 <strong>편집 권한</strong>이 있어야 관리자 기능이 활성화됩니다.</li>
@@ -781,9 +923,24 @@ export default function DentalLeaveApp() {
                                 <TodayStatusCard />
                             </div>
                             <div className="col-span-2">
-                                 <div className="h-full bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#F0EAE4] dark:border-[#333333] p-5 flex items-center justify-center text-[#DBCCC0] dark:text-[#444444] font-medium transition-colors">
-                                    오늘도 좋은 하루 보내세요! ✨
-                                 </div>
+                                 {invalidLeaves.length > 0 ? (
+                                    <div className="h-full bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-700 p-5 flex flex-col justify-center transition-colors">
+                                        <div className="flex items-center gap-2 mb-2 text-amber-800 dark:text-amber-300 font-bold">
+                                            <span className="text-xl">⚠️</span> 확인 필요 ({invalidLeaves.length}건)
+                                        </div>
+                                        <div className="text-xs text-amber-700 dark:text-amber-400 overflow-y-auto max-h-[60px] custom-scrollbar space-y-1">
+                                            {invalidLeaves.map((item, i) => (
+                                                <div key={i} className="truncate">
+                                                    • <strong>{item.name}</strong>: "{item.original}"
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                 ) : (
+                                    <div className="h-full bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#F0EAE4] dark:border-[#333333] p-5 flex items-center justify-center text-[#DBCCC0] dark:text-[#444444] font-medium transition-colors">
+                                       오늘도 좋은 하루 보내세요! ✨
+                                    </div>
+                                 )}
                             </div>
                         </div>
                         {/* 데스크탑은 큰 달력 표시 */}
