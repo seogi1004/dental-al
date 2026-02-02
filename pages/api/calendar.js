@@ -25,6 +25,58 @@ export default async function handler(req, res) {
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
   // ============================================================
+  // [POST] 연차 추가
+  // Body: { name, date } (date는 "01/15" 또는 "01/15 AM" 형식)
+  // ============================================================
+  if (req.method === 'POST') {
+    try {
+      const { name, date } = req.body;
+      if (!name || !date) return res.status(400).json({ error: 'Missing name or date' });
+
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${SHEET_CALENDAR}!A:X`,
+      });
+      const rows = response.data.values || [];
+
+      let rowIndex = -1;
+      for (let i = 0; i < rows.length; i++) {
+        if (rows[i][0] === name) {
+          rowIndex = i;
+          break;
+        }
+      }
+      if (rowIndex === -1) return res.status(404).json({ error: 'User not found' });
+
+      let colIndex = -1;
+      const targetRow = rows[rowIndex] || [];
+      for (let j = 4; j <= 23; j++) {
+        if (!targetRow[j] || targetRow[j].trim() === '') {
+          colIndex = j;
+          break;
+        }
+      }
+      if (colIndex === -1) return res.status(400).json({ error: '연차 저장 공간이 부족합니다.' });
+
+      const rowNum = rowIndex + 1;
+      const colLetter = String.fromCharCode(65 + colIndex);
+      const range = `${SHEET_CALENDAR}!${colLetter}${rowNum}`;
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range,
+        valueInputOption: 'USER_ENTERED',
+        resource: { values: [[date]] }
+      });
+
+      return res.status(200).json({ success: true, message: `Added to ${range}` });
+    } catch (error) {
+      console.error("Add Error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  // ============================================================
   // [DELETE] 연차 삭제
   // Body: { name, date } (date는 "1-15" 또는 "1-15 AM" 원본 텍스트)
   // ============================================================

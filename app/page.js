@@ -230,64 +230,125 @@ export default function DentalLeaveApp() {
 
   const handleLeaveClick = async (staffName, originalDate, dateYMD) => {
     if (!session?.isAdmin) {
-        alert("관리자만 수정/삭제할 수 있습니다.");
-        return;
+      alert("관리자만 수정할 수 있습니다.");
+      return;
     }
     
-    // Format for display: 01/15 (User preference)
     let displayDate = originalDate;
     try {
-        if (dateYMD) {
-            const d = new Date(dateYMD);
-            if (!isNaN(d.getTime())) {
-                 const mm = String(d.getMonth() + 1).padStart(2, '0');
-                 const dd = String(d.getDate()).padStart(2, '0');
-                 displayDate = `${mm}/${dd}`;
-                 
-                 if (String(originalDate).toUpperCase().includes('AM')) displayDate += ' AM';
-                 else if (String(originalDate).toUpperCase().includes('PM')) displayDate += ' PM';
-            }
+      if (dateYMD) {
+        const d = new Date(dateYMD);
+        if (!isNaN(d.getTime())) {
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          displayDate = `${mm}/${dd}`;
+          if (String(originalDate).toUpperCase().includes('AM')) displayDate += ' AM';
+          else if (String(originalDate).toUpperCase().includes('PM')) displayDate += ' PM';
         }
+      }
     } catch(e) {}
     
-    const newValue = prompt("연차 수정/삭제\n\n- 수정: 내용을 변경하세요 (예: 01/15 AM)\n- 삭제: 내용을 모두 지우세요\n- 취소: 취소 버튼 클릭", displayDate);
-    
+    const newValue = prompt("연차 날짜를 수정하세요:\n\n예: 01/15, 01/15 AM, 01/15 PM", displayDate);
     if (newValue === null) return;
+    if (newValue.trim() === '' || newValue.trim() === originalDate) return;
+    
+    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM))?$/i;
+    if (!datePattern.test(newValue.trim())) {
+      alert("올바른 형식으로 입력해주세요.\n\n예: 01/15, 01/15 AM, 01/15 PM");
+      return;
+    }
+    
+    setStatusMsg("수정 중...");
+    try {
+      const res = await fetch('/api/calendar', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: staffName, oldDate: originalDate, newDate: newValue.trim() })
+      });
+      if (!res.ok) throw new Error("수정 실패");
+      alert("수정되었습니다.");
+      fetchSheetData();
+    } catch (e) {
+      console.error(e);
+      alert("수정 실패: " + e.message);
+      setStatusMsg("오류 발생");
+    }
+  };
 
-    if (newValue.trim() === "") {
-        if (confirm("정말 삭제하시겠습니까?")) {
-            setStatusMsg("삭제 중...");
-            try {
-                const res = await fetch('/api/calendar', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: staffName, date: originalDate })
-                });
-                if (!res.ok) throw new Error("Delete failed");
-                alert("삭제되었습니다.");
-                fetchSheetData();
-            } catch (e) {
-                console.error(e);
-                alert("삭제 실패: " + e.message);
-                setStatusMsg("오류 발생");
-            }
-        }
-    } else if (newValue.trim() !== originalDate) {
-        setStatusMsg("수정 중...");
-        try {
-            const res = await fetch('/api/calendar', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: staffName, oldDate: originalDate, newDate: newValue.trim() })
-            });
-            if (!res.ok) throw new Error("Update failed");
-            alert("수정되었습니다.");
-            fetchSheetData();
-        } catch (e) {
-            console.error(e);
-            alert("수정 실패: " + e.message);
-            setStatusMsg("오류 발생");
-        }
+  const handleLeaveDelete = async (staffName, originalDate) => {
+    if (!session?.isAdmin) {
+      alert("관리자만 삭제할 수 있습니다.");
+      return;
+    }
+    
+    if (!confirm(`${staffName}님의 연차(${originalDate})를 삭제하시겠습니까?`)) {
+      return;
+    }
+    
+    setStatusMsg("삭제 중...");
+    try {
+      const res = await fetch('/api/calendar', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: staffName, date: originalDate })
+      });
+      if (!res.ok) throw new Error("삭제 실패");
+      alert("삭제되었습니다.");
+      fetchSheetData();
+    } catch (e) {
+      console.error(e);
+      alert("삭제 실패: " + e.message);
+      setStatusMsg("오류 발생");
+    }
+  };
+
+  const handleLeaveAdd = async (dateStr) => {
+    if (!session?.isAdmin) {
+      alert("관리자만 추가할 수 있습니다.");
+      return;
+    }
+    
+    const staffNames = staffData.map(s => s.name).join(', ');
+    const selectedName = prompt(`연차를 추가할 직원 이름을 입력하세요:\n\n현재 직원: ${staffNames}`);
+    if (!selectedName) return;
+    
+    const staff = staffData.find(s => s.name === selectedName.trim());
+    if (!staff) {
+      alert("존재하지 않는 직원입니다.");
+      return;
+    }
+    
+    const d = new Date(dateStr);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const defaultDate = `${mm}/${dd}`;
+    
+    const dateInput = prompt("연차 날짜를 입력하세요:\n\n예: 01/15 (종일)\n예: 01/15 AM (오전반차)\n예: 01/15 PM (오후반차)", defaultDate);
+    if (!dateInput) return;
+    
+    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM))?$/i;
+    if (!datePattern.test(dateInput.trim())) {
+      alert("올바른 형식으로 입력해주세요.\n\n예: 01/15, 01/15 AM, 01/15 PM");
+      return;
+    }
+    
+    setStatusMsg("추가 중...");
+    try {
+      const res = await fetch('/api/calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: staff.name, date: dateInput.trim() })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "추가 실패");
+      }
+      alert("연차가 추가되었습니다.");
+      fetchSheetData();
+    } catch (e) {
+      console.error(e);
+      alert("추가 실패: " + e.message);
+      setStatusMsg("오류 발생");
     }
   };
 
@@ -407,9 +468,12 @@ export default function DentalLeaveApp() {
               
               return (
                 <div key={idx} 
-                     onClick={() => handleLeaveClick(item.name, item.original, item.date)}
-                     className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 cursor-pointer hover:bg-[#F2EBE5] dark:hover:bg-[#252525] active:scale-[0.98] transition-transform ${isPast ? 'bg-[#F5F5F5] dark:bg-[#2A2A2A] opacity-60' : 'bg-[#FDFBF7] dark:bg-[#121212] border border-[#EBE5DD] dark:border-[#444444]'}`}>
-                  <div className="flex items-center gap-3">
+                     className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 ${isPast ? 'bg-[#F5F5F5] dark:bg-[#2A2A2A] opacity-60' : 'bg-[#FDFBF7] dark:bg-[#121212] border border-[#EBE5DD] dark:border-[#444444]'}`}
+                >
+                  <div 
+                    onClick={() => handleLeaveClick(item.name, item.original, item.date)}
+                    className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-70 transition-opacity"
+                  >
                     <span className={`text-sm font-bold ${isPast ? 'text-gray-500 dark:text-gray-400' : 'text-[#8D7B68] dark:text-[#A4907C]'}`}>
                       {formatDate(item.original)}
                     </span>
@@ -420,9 +484,20 @@ export default function DentalLeaveApp() {
                         <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${badgeColor}`}>{item.type}</span>
                     )}
                   </div>
-                  {item.date === getTodayString() && (
-                    <span className="text-xs bg-[#8D7B68] dark:bg-[#5C4A3A] text-white px-2 py-1 rounded-full font-bold">Today</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {item.date === getTodayString() && (
+                      <span className="text-xs bg-[#8D7B68] dark:bg-[#5C4A3A] text-white px-2 py-1 rounded-full font-bold">Today</span>
+                    )}
+                    {session?.isAdmin && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleLeaveDelete(item.name, item.original); }}
+                        className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-[#DBCCC0] hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                        title="삭제"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -513,22 +588,45 @@ export default function DentalLeaveApp() {
 
                 return (
                     <div key={day} className={`h-24 border-r border-b border-[#F0EAE4] dark:border-[#333333] p-1 relative hover:bg-[#FDFBF7] dark:hover:bg-[#252525] transition group ${isToday ? 'bg-[#FFF9F0] dark:bg-[#2C241B]' : ''}`}>
-                        <span className={`text-sm font-bold absolute top-1 left-2 ${dayOfWeek === 0 ? 'text-red-400' : dayOfWeek === 6 ? 'text-blue-400' : 'text-[#5C5552] dark:text-[#A0A0A0]'}`}>
-                            {day} {isToday && <span className="text-[10px] bg-[#8D7B68] dark:bg-[#5C4A3A] text-white px-1.5 rounded-full ml-1 align-top">Today</span>}
-                        </span>
+                        <div className="flex items-center justify-between px-1">
+                            <span className={`text-sm font-bold ${dayOfWeek === 0 ? 'text-red-400' : dayOfWeek === 6 ? 'text-blue-400' : 'text-[#5C5552] dark:text-[#A0A0A0]'}`}>
+                                {day} {isToday && <span className="text-[10px] bg-[#8D7B68] dark:bg-[#5C4A3A] text-white px-1.5 rounded-full ml-1 align-top">Today</span>}
+                            </span>
+                            {session?.isAdmin && (
+                                <button 
+                                    onClick={() => handleLeaveAdd(dateStr)}
+                                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[#EBE5DD] dark:hover:bg-[#3D3D3D] text-[#8D7B68] dark:text-[#A4907C] transition-opacity"
+                                    title="연차 추가"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
                         
-                        <div className="mt-6 flex flex-col gap-1 overflow-y-auto max-h-[calc(100%-24px)] custom-scrollbar">
+                        <div className="mt-1 flex flex-col gap-1 overflow-y-auto max-h-[calc(100%-28px)] custom-scrollbar">
                             {leaves.map((person, idx) => (
                                 <div key={idx} 
-                                     onClick={() => handleLeaveClick(person.name, person.original, dateStr)}
-                                     className="text-xs bg-[#F2EBE5] dark:bg-[#2D2D2D] text-[#5C5552] dark:text-[#E0E0E0] px-1.5 py-0.5 rounded border border-[#EBE5DD] dark:border-[#444444] truncate flex items-center justify-between cursor-pointer hover:opacity-70 transition-opacity" 
-                                     title={`${person.name} (${person.role})`}
+                                     className="text-xs bg-[#F2EBE5] dark:bg-[#2D2D2D] text-[#5C5552] dark:text-[#E0E0E0] px-1.5 py-0.5 rounded border border-[#EBE5DD] dark:border-[#444444] flex items-center justify-between group/item cursor-pointer hover:bg-[#EBE5DD] dark:hover:bg-[#3D3D3D] transition-colors"
                                 >
-                                    <div>
-                                        <strong>{person.name}</strong> <span className="opacity-70 text-[10px]">{person.role}</span>
+                                    <div 
+                                        onClick={() => handleLeaveClick(person.name, person.original, dateStr)}
+                                        className="flex-1 flex items-center gap-1 min-w-0 truncate"
+                                        title={`${person.name} (${person.role}) - 클릭하여 수정`}
+                                    >
+                                        <strong className="truncate">{person.name}</strong>
+                                        <span className="opacity-70 text-[10px] shrink-0">{person.role}</span>
+                                        {person.type === 'AM' && <span className="text-[9px] bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200 px-1 rounded shrink-0">AM</span>}
+                                        {person.type === 'PM' && <span className="text-[9px] bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200 px-1 rounded shrink-0">PM</span>}
                                     </div>
-                                    {person.type === 'AM' && <span className="text-[9px] bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200 px-1 rounded ml-1">AM</span>}
-                                    {person.type === 'PM' && <span className="text-[9px] bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200 px-1 rounded ml-1">PM</span>}
+                                    {session?.isAdmin && (
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleLeaveDelete(person.name, person.original); }}
+                                            className="opacity-0 group-hover/item:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-[#DBCCC0] hover:text-red-500 dark:hover:text-red-400 transition-opacity ml-1 shrink-0"
+                                            title="삭제"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
