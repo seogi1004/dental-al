@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const newData = req.body;
       const rows = newData.map(item => [
-        item["이름"], item["직급"], item["입사일"], item["발생"], item["사용"], item["비고"]
+        item.name, item.role, item.date, item.total, item.used, item.memo
       ]);
 
       await sheets.spreadsheets.values.clear({
