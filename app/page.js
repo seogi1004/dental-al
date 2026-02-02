@@ -6,8 +6,7 @@ import {
   Calendar, User, FileText, LogOut, X, LogIn
 } from 'lucide-react';
 
-// [수정됨] 프리뷰 환경에서 실행하기 위해 next-auth 패키지 대신 로컬 상태로 대체합니다.
-// 실제 Vercel 배포 시에는 아래 주석을 해제하고 시뮬레이션 코드를 삭제하세요.
+// [수정] 실제 NextAuth 훅을 가져옵니다.
 import { useSession, signIn, signOut } from "next-auth/react";
 
 const theme = {
@@ -22,45 +21,13 @@ const theme = {
 
 export default function DentalLeaveApp() {
   // ==================================================================================
-  // [인증 시뮬레이션 - 프리뷰용]
-  // 실제 배포 시에는 이 부분을 삭제하고 const { data: session, status } = useSession(); 을 사용하세요.
+  // [수정됨] 실제 NextAuth 세션 연동
+  // useSession 훅을 사용하여 현재 로그인 상태와 사용자 정보를 가져옵니다.
   // ==================================================================================
-  const [session, setSession] = useState(null);
-  const [loadingSession, setLoadingSession] = useState(true);
+  const { data: session, status } = useSession();
+  const loadingSession = status === "loading"; 
 
-  useEffect(() => {
-    // 초기 로딩 시뮬레이션
-    const timer = setTimeout(() => {
-      setLoadingSession(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const signIn = () => {
-    // 로그인 시뮬레이션
-    setLoadingSession(true);
-    setTimeout(() => {
-      setSession({
-        user: {
-          name: "더데이치과 관리자",
-          email: "admin@theday.com",
-          image: null
-        }
-      });
-      setLoadingSession(false);
-    }, 800);
-  };
-
-  const signOut = () => {
-    setLoadingSession(true);
-    setTimeout(() => {
-      setSession(null);
-      setLoadingSession(false);
-    }, 500);
-  };
-  // ==================================================================================
-
-  // 기본 탭: 현황표('list')로 고정 (비로그인 시에도 볼 수 있음)
+  // 기본 탭: 현황표('list')로 고정
   const [activeTab, setActiveTab] = useState('list');
   const [staffData, setStaffData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -77,16 +44,12 @@ export default function DentalLeaveApp() {
       const res = await fetch('/api/sheets'); 
       
       if (!res.ok) {
-        // API 오류 시 (권한 없음 등)
-        console.warn("데이터 로드 실패 (API 응답 오류 - 데모 데이터 로드)");
-        // 데모 환경에서는 빈 배열 대신 예시 데이터를 보여줄 수도 있으나, 요청대로 빈 배열 처리
         setStaffData([]); 
-        setStatusMsg('데이터 로드 실패 (데모)');
+        setStatusMsg('데이터 로드 실패');
         return;
       }
 
       const data = await res.json();
-      // 데이터가 있으면 설정, 없으면 빈 배열
       setStaffData(data && data.length > 0 ? data : []);
       setStatusMsg('동기화 완료');
     } catch (error) {
@@ -99,7 +62,7 @@ export default function DentalLeaveApp() {
   }, []);
 
   const saveSheetData = async (newData) => {
-    // 실제 로그인 체크
+    // [수정] 실제 세션 체크
     if (!session) {
         alert("로그인이 필요합니다.");
         return;
@@ -114,8 +77,7 @@ export default function DentalLeaveApp() {
       });
       
       if (!res.ok) {
-        // const errData = await res.json(); // 데모 환경이라 실제 API 응답이 없을 수 있음
-        throw new Error('Failed to save (Demo Mode)');
+        throw new Error('Failed to save');
       }
       
       setStatusMsg('저장됨');
@@ -123,8 +85,7 @@ export default function DentalLeaveApp() {
     } catch (error) {
       console.error("Save Error:", error);
       setStatusMsg('저장 실패');
-      // 실제 환경에서는 에러 메시지를 띄우지만, 데모에서는 콘솔만 기록
-      // alert(`저장에 실패했습니다: ${error.message}`);
+      alert('저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -132,7 +93,6 @@ export default function DentalLeaveApp() {
   // 3. 이벤트 핸들러
   // ==================================================================================
 
-  // 초기 로드 및 탭 전환 시 데이터 갱신
   useEffect(() => {
     if (activeTab === 'list') {
       fetchSheetData();
@@ -145,7 +105,7 @@ export default function DentalLeaveApp() {
     const newData = [...staffData];
     newData[index][field] = value;
     
-    // 날짜 변경 시 연차 자동 계산
+    // 날짜 변경 시 연차 자동 계산 로직 (기존 유지)
     if (field === 'date' && value) {
       const joinDate = new Date(value);
       const today = new Date();
@@ -167,7 +127,6 @@ export default function DentalLeaveApp() {
 
     setStaffData(newData);
 
-    // 자동 저장 (Debounce)
     if (saveTimeout) clearTimeout(saveTimeout);
     const timeoutId = setTimeout(() => {
       saveSheetData(newData);
@@ -260,7 +219,7 @@ export default function DentalLeaveApp() {
                   <button 
                     onClick={() => signIn("google")} 
                     className="ml-2 bg-[#7A6A59] hover:bg-[#6B5D4D] text-[#EBE5DD] hover:text-white px-4 py-2 rounded-full transition text-sm font-bold flex items-center gap-2 shadow-sm"
-                    title="관리자 로그인"
+                    title="구글 로그인"
                   >
                     <LogIn className="w-4 h-4" /> 로그인
                   </button>
@@ -268,9 +227,9 @@ export default function DentalLeaveApp() {
             </div>
         </div>
 
-        {/* -------------------------------------------------------------------------- */}
-        {/* 탭 1: 연차 현황표 */}
-        {/* -------------------------------------------------------------------------- */}
+        {/* ... (이하 테이블 및 신청서 렌더링 코드는 동일하므로 생략 가능, 위 코드에서 그대로 사용하세요) ... */}
+        {/* 기존 코드의 렌더링 부분과 완전히 동일합니다 */}
+        
         {activeTab === 'list' && (
           <div className="p-8 bg-[#FDFBF7] h-full">
             <div className="bg-white rounded-2xl shadow-sm p-8 border border-[#F0EAE4]">
@@ -297,7 +256,7 @@ export default function DentalLeaveApp() {
 
                 {loading ? (
                     <div className="py-20 text-center text-[#8D7B68] animate-pulse">
-                         데이터를 불러오는 중입니다...
+                          데이터를 불러오는 중입니다...
                     </div>
                 ) : (
                     <div className="overflow-x-auto rounded-xl border border-[#F0EAE4]">
@@ -405,19 +364,16 @@ export default function DentalLeaveApp() {
           </div>
         )}
 
-        {/* -------------------------------------------------------------------------- */}
-        {/* 탭 2: 연차 신청서 (항상 보임) */}
-        {/* -------------------------------------------------------------------------- */}
+        {/* 탭 2: 연차 신청서 (기존 코드 유지) */}
         {activeTab === 'form' && (
           <div className="p-8 bg-[#FDFBF7] flex flex-col items-center">
-             <div className="w-full flex justify-end mb-6 print:hidden">
-                <button onClick={() => window.print()} className={`flex items-center gap-2 ${theme.primary} text-white px-5 py-2.5 rounded-xl transition shadow-md text-sm font-bold`}>
-                    <Printer className="w-4 h-4" /> 인쇄하기
-                </button>
-            </div>
-
-            {/* A4 용지 스타일 컨테이너 */}
-            <div className="bg-white p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] relative rounded-sm print:shadow-none print:w-full print:m-0">
+              <div className="w-full flex justify-end mb-6 print:hidden">
+                 <button onClick={() => window.print()} className={`flex items-center gap-2 ${theme.primary} text-white px-5 py-2.5 rounded-xl transition shadow-md text-sm font-bold`}>
+                     <Printer className="w-4 h-4" /> 인쇄하기
+                 </button>
+             </div>
+             {/* ... 신청서 UI 코드 생략 (위의 원본과 동일) ... */}
+             <div className="bg-white p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] relative rounded-sm print:shadow-none print:w-full print:m-0">
                 <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 tracking-widest text-[#222] font-serif">연차(휴가) 신청서</h2>
                 
                 {/* 결재란 */}
