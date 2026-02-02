@@ -4,10 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Printer, Plus, RefreshCw, CheckCircle, 
   Calendar, User, FileText, LogOut, X, LogIn, 
-  Trash2, ChevronRight
+  Trash2, Clock, CalendarDays, AlertCircle
 } from 'lucide-react';
 
-// 실제 NextAuth 훅 사용
 import { useSession, signIn, signOut } from "next-auth/react";
 
 const theme = {
@@ -20,6 +19,29 @@ const theme = {
   accent: "text-[#A4907C]"
 };
 
+// [시뮬레이션 데이터] 실제 배포 시에는 API에서 두 시트("현황표", "2026년")를 조인해서 가져와야 합니다.
+const MOCK_DB_DATA = [
+  { 
+    name: "최지원", 
+    role: "일반", 
+    date: "2026-01-19", 
+    total: 11, 
+    used: 1, 
+    memo: "", 
+    // 두번째 시트 "2026년"에서 읽어온 연차 사용 날짜들
+    leaves: ["2026-02-03"] 
+  },
+  { 
+    name: "홍재석", 
+    role: "직원", 
+    date: "2026-02-02", 
+    total: 11, 
+    used: 0, 
+    memo: "", 
+    leaves: [] 
+  }
+];
+
 export default function DentalLeaveApp() {
   const { data: session, status } = useSession();
   const loadingSession = status === "loading";
@@ -31,16 +53,59 @@ export default function DentalLeaveApp() {
   const [saveTimeout, setSaveTimeout] = useState(null);
 
   // ==================================================================================
+  // Helper: 날짜 관련 유틸리티
+  // ==================================================================================
+  const getTodayString = () => new Date().toISOString().split('T')[0];
+  
+  const formatDate = (dateStr) => {
+    const d = new Date(dateStr);
+    const week = ['일', '월', '화', '수', '목', '금', '토'];
+    return `${d.getMonth() + 1}/${d.getDate()}(${week[d.getDay()]})`;
+  };
+
+  // 이번 달 연차 목록 추출
+  const getCurrentMonthLeaves = useCallback(() => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    const leavesList = [];
+    staffData.forEach(staff => {
+      if (staff.leaves && Array.isArray(staff.leaves)) {
+        staff.leaves.forEach(dateStr => {
+          const d = new Date(dateStr);
+          if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+            leavesList.push({
+              date: dateStr,
+              dateObj: d,
+              name: staff.name,
+              role: staff.role
+            });
+          }
+        });
+      }
+    });
+    // 날짜순 정렬
+    return leavesList.sort((a, b) => a.dateObj - b.dateObj);
+  }, [staffData]);
+
+  // 오늘 휴가자 추출
+  const getTodayLeaves = useCallback(() => {
+    const todayStr = getTodayString();
+    return staffData.filter(staff => staff.leaves?.includes(todayStr));
+  }, [staffData]);
+
+  // ==================================================================================
   // API 통신 함수
   // ==================================================================================
-  
   const fetchSheetData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/sheets'); 
       if (!res.ok) {
-        setStaffData([]); 
-        setStatusMsg('데이터 로드 실패');
+        // API 연동 전이거나 실패 시 시뮬레이션 데이터 사용
+        setStaffData(MOCK_DB_DATA); 
+        setStatusMsg('데이터 로드 완료 (데모)');
         return;
       }
       const data = await res.json();
@@ -48,7 +113,9 @@ export default function DentalLeaveApp() {
       setStatusMsg('동기화 완료');
     } catch (error) {
       console.error("Fetch Error:", error);
-      setStatusMsg('연결 오류');
+      // 에러 시에도 데모 데이터 로드
+      setStaffData(MOCK_DB_DATA);
+      setStatusMsg('연결 오류 (데모 모드)');
     } finally {
       setLoading(false);
       setTimeout(() => setStatusMsg(''), 3000);
@@ -80,7 +147,6 @@ export default function DentalLeaveApp() {
   // ==================================================================================
   // 이벤트 핸들러
   // ==================================================================================
-
   useEffect(() => {
     if (activeTab === 'list') {
       fetchSheetData();
@@ -93,23 +159,15 @@ export default function DentalLeaveApp() {
     const newData = [...staffData];
     newData[index][field] = value;
     
-    // 날짜 변경 시 연차 자동 계산
     if (field === 'date' && value) {
       const joinDate = new Date(value);
       const today = new Date();
       let years = today.getFullYear() - joinDate.getFullYear();
       const m = today.getMonth() - joinDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < joinDate.getDate())) {
-        years--;
-      }
+      if (m < 0 || (m === 0 && today.getDate() < joinDate.getDate())) years--;
 
-      let leave = 0;
-      if (years < 1) {
-        leave = 11; 
-      } else {
-        leave = 15 + Math.floor((years - 1) / 2);
-        if (leave > 25) leave = 25;
-      }
+      let leave = years < 1 ? 11 : (15 + Math.floor((years - 1) / 2));
+      if (leave > 25) leave = 25;
       newData[index].total = leave;
     }
 
@@ -133,14 +191,14 @@ export default function DentalLeaveApp() {
       alert("로그인이 필요한 기능입니다.");
       return;
     }
-
     const newItem = {
       name: "", 
       role: "직원", 
       date: new Date().toISOString().split('T')[0],
-      total: 11, // 기본값 설정
+      total: 11, 
       used: 0, 
       memo: "",
+      leaves: [], // 새 직원 연차 목록 초기화
       isNew: true 
     };
     const newData = [...staffData, newItem];
@@ -150,11 +208,74 @@ export default function DentalLeaveApp() {
 
   const deleteStaff = (index) => {
     if (!session) return;
-    if (confirm("정말 삭제하시겠습니까? 구글 시트에서도 삭제됩니다.")) {
+    if (confirm("정말 삭제하시겠습니까?")) {
       const newData = staffData.filter((_, i) => i !== index);
       setStaffData(newData);
       saveSheetData(newData);
     }
+  };
+
+  // ==================================================================================
+  // 컴포넌트: 대시보드 카드들
+  // ==================================================================================
+  
+  // 1. 오늘의 현황 카드
+  const TodayStatusCard = () => {
+    const todayLeaves = getTodayLeaves();
+    return (
+      <div className="bg-[#8D7B68] text-white p-5 rounded-2xl shadow-lg flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm opacity-90 mb-1 flex items-center gap-1"><Clock className="w-4 h-4"/> 오늘의 현황</h3>
+          <p className="text-2xl font-bold">
+            {todayLeaves.length > 0 ? `${todayLeaves.length}명 휴가 중` : "전원 출근"}
+          </p>
+        </div>
+        <div className="bg-white/20 p-3 rounded-full">
+           <CheckCircle className="w-6 h-6 text-white" />
+        </div>
+      </div>
+    );
+  };
+
+  // 2. 이번 달 연차 일정 카드 (요청하신 2번째 카드)
+  const MonthlyScheduleCard = () => {
+    const leaves = getCurrentMonthLeaves();
+    const todayMonth = new Date().getMonth() + 1;
+
+    return (
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F0EAE4] mb-6">
+        <h3 className="text-[#5C5552] font-bold mb-4 flex items-center gap-2 text-lg">
+          <CalendarDays className="w-5 h-5 text-[#8D7B68]"/> {todayMonth}월 연차 일정
+        </h3>
+        
+        {leaves.length === 0 ? (
+          <div className="text-center py-6 text-[#A4907C] text-sm bg-[#FDFBF7] rounded-xl">
+             이번 달 예정된 연차가 없습니다.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {leaves.map((item, idx) => {
+              const isPast = item.date < getTodayString();
+              return (
+                <div key={idx} className={`flex items-center justify-between p-3 rounded-xl ${isPast ? 'bg-[#F5F5F5] opacity-60' : 'bg-[#FDFBF7] border border-[#EBE5DD]'}`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm font-bold ${isPast ? 'text-gray-500' : 'text-[#8D7B68]'}`}>
+                      {formatDate(item.date)}
+                    </span>
+                    <div className="h-4 w-[1px] bg-[#EBE5DD]"></div>
+                    <span className="text-[#5C5552] font-medium">{item.name}</span>
+                    <span className="text-xs text-[#A4907C] bg-white px-1.5 py-0.5 rounded border border-[#EBE5DD]">{item.role}</span>
+                  </div>
+                  {item.date === getTodayString() && (
+                    <span className="text-xs bg-[#8D7B68] text-white px-2 py-1 rounded-full font-bold">Today</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
   };
 
   // ==================================================================================
@@ -169,7 +290,7 @@ export default function DentalLeaveApp() {
     <div className={`min-h-screen ${theme.bg} ${theme.text} p-4 md:p-8 flex justify-center font-sans`}>
       <div className={`w-full max-w-5xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px]`}>
         
-        {/* 헤더 영역 */}
+        {/* 헤더 */}
         <div className="bg-[#8D7B68] p-6 text-white flex flex-col md:flex-row justify-between items-center shadow-md print:hidden">
             <h1 className="text-2xl font-bold flex items-center gap-3 tracking-wide">
                 <span className="text-[#FDFBF7]">더데이치과</span> 
@@ -177,7 +298,6 @@ export default function DentalLeaveApp() {
             </h1>
             
             <div className="flex gap-3 mt-4 md:mt-0 items-center">
-                {/* 탭 메뉴: 모바일에서는 현황표만 보이게 신청서 버튼을 숨김(hidden md:flex) */}
                 <div className="bg-[#7A6A59] p-1.5 rounded-full shadow-inner flex">
                   <button 
                     onClick={() => setActiveTab('list')} 
@@ -193,7 +313,6 @@ export default function DentalLeaveApp() {
                   </button>
                 </div>
                 
-                {/* 로그인 상태 버튼 */}
                 {session ? (
                   <button onClick={() => signOut()} className="ml-2 bg-[#7A6A59] hover:bg-[#6B5D4D] text-white p-2.5 rounded-full transition shadow-sm" title="로그아웃">
                       <LogOut className="w-5 h-5" />
@@ -209,210 +328,216 @@ export default function DentalLeaveApp() {
         {/* 탭 1: 연차 현황표 */}
         {activeTab === 'list' && (
           <div className="p-4 md:p-8 bg-[#FDFBF7] h-full">
-            <div className="bg-white rounded-2xl shadow-sm p-4 md:p-8 border border-[#F0EAE4]">
-                <div className="flex justify-between items-end mb-6 pb-6 border-b border-[#F0EAE4]">
-                    <div>
-                        <h2 className="text-xl md:text-2xl font-bold text-[#5C5552] flex items-center gap-2">
-                           <User className="w-6 h-6 text-[#A4907C]" /> 
-                           <span className="hidden md:inline">직원 연차 현황 (2026년)</span>
-                           <span className="md:hidden">연차 현황</span>
-                        </h2>
-                        <p className="text-[#A4907C] text-xs md:text-sm mt-2 flex items-center gap-2">
-                            {statusMsg ? (
-                                <span className="flex items-center gap-1 text-green-600 font-medium"><CheckCircle className="w-4 h-4"/> {statusMsg}</span>
-                            ) : (
-                                <span className="flex items-center gap-1"><RefreshCw className="w-4 h-4"/> 자동 동기화</span>
-                            )}
-                        </p>
-                    </div>
-                    {session && (
-                      <button onClick={addStaff} className={`${theme.primary} text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md transition`}>
-                          <Plus className="w-4 h-4" /> <span className="hidden md:inline">직원 추가</span><span className="md:hidden">추가</span>
-                      </button>
-                    )}
+            <div className="w-full max-w-5xl mx-auto">
+                {/* [모바일 대시보드 영역] 
+                  1. TodayStatusCard (오늘 현황)
+                  2. MonthlyScheduleCard (이번달 일정 - 요청사항)
+                */}
+                <div className="md:hidden">
+                    <TodayStatusCard />
+                    <MonthlyScheduleCard />
                 </div>
 
-                {loading ? (
-                    <div className="py-20 text-center text-[#8D7B68] animate-pulse">데이터를 불러오는 중입니다...</div>
-                ) : (
-                    <>
-                      {/* ======================= */}
-                      {/* 1. 데스크탑 뷰 (테이블) */}
-                      {/* ======================= */}
-                      <div className="hidden md:block overflow-x-auto rounded-xl border border-[#F0EAE4]">
-                          <table className="w-full text-sm text-left text-[#5C5552]">
-                              <thead className="text-xs text-[#8D7B68] uppercase bg-[#F2EBE5]">
-                                  <tr>
-                                      <th className="px-4 py-4 text-center w-12 font-bold">No</th>
-                                      <th className="px-4 py-4 font-bold">성명</th>
-                                      <th className="px-4 py-4 font-bold">직급</th>
-                                      <th className="px-4 py-4 w-32 font-bold">입사일</th>
-                                      <th className="px-4 py-4 text-center bg-[#EBE5DD] font-bold">발생</th>
-                                      <th className="px-4 py-4 text-center bg-[#F5E6E6] text-[#A66E6E] font-bold">사용</th>
-                                      <th className="px-4 py-4 text-center bg-[#E6F0E6] text-[#6E9675] font-bold">잔여</th>
-                                      <th className="px-4 py-4 font-bold">비고</th>
-                                      {session && <th className="px-4 py-4 text-center w-16 font-bold">관리</th>}
-                                  </tr>
-                              </thead>
-                              <tbody className="divide-y divide-[#F0EAE4]">
-                                  {staffData.map((staff, index) => {
-                                      const remain = (parseFloat(staff.total) || 0) - (parseFloat(staff.used) || 0);
-                                      const isSessionActive = !!session;
-                                      
-                                      return (
-                                          <tr key={index} className="bg-white hover:bg-[#F9F7F2] transition">
-                                              <td className="px-4 py-3 text-center text-[#A4907C]">{index + 1}</td>
-                                              <td className="px-4 py-3">
-                                                  <input type="text" value={staff.name} 
-                                                      onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
-                                                      onBlur={handleBlur} 
-                                                      readOnly={!isSessionActive}
-                                                      className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] placeholder-[#DBCCC0] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`} 
-                                                      placeholder="이름" 
-                                                  />
-                                              </td>
-                                              <td className="px-4 py-3">
-                                                  <input type="text" value={staff.role} 
-                                                      onChange={(e) => handleUpdate(index, 'role', e.target.value)} 
-                                                      onBlur={handleBlur} 
-                                                      readOnly={!isSessionActive}
-                                                      className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] text-[#8D8D8D] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`}
-                                                      placeholder="직급" 
-                                                  />
-                                              </td>
-                                              <td className="px-4 py-3">
-                                                  <input type="date" value={staff.date} 
-                                                      onChange={(e) => handleUpdate(index, 'date', e.target.value)} 
-                                                      onBlur={handleBlur} 
-                                                      readOnly={!isSessionActive}
-                                                      className={`w-full bg-transparent outline-none text-[#5C5552] ${!isSessionActive ? 'cursor-default' : 'cursor-pointer'}`}
-                                                  />
-                                              </td>
-                                              {/* 데스크탑: 발생/사용 연차 수정 불가 (요청사항 반영) */}
-                                              <td className="px-4 py-3 text-center">
-                                                  <input type="number" value={staff.total} 
-                                                      readOnly={true} 
-                                                      className="w-12 text-center rounded py-1 outline-none font-bold bg-transparent border-none text-[#5C5552] cursor-default" 
-                                                  />
-                                              </td>
-                                              <td className="px-4 py-3 text-center">
-                                                  <input type="number" value={staff.used} 
-                                                      readOnly={true}
-                                                      className="w-12 text-center rounded py-1 font-bold outline-none bg-transparent border-none text-[#A66E6E] cursor-default" 
-                                                  />
-                                              </td>
-                                              <td className="px-4 py-3 text-center">
-                                                  <span className={`font-bold text-lg ${remain <= 0 ? 'text-[#A66E6E]' : 'text-[#6E9675]'}`}>{remain}</span>
-                                              </td>
-                                              <td className="px-4 py-3">
-                                                  <input type="text" value={staff.memo} 
-                                                      onChange={(e) => handleUpdate(index, 'memo', e.target.value)} 
-                                                      onBlur={handleBlur} 
-                                                      readOnly={!isSessionActive}
-                                                      className="w-full bg-transparent outline-none text-[#8D8D8D]" 
-                                                      placeholder="메모" 
-                                                  />
-                                              </td>
-                                              {session && (
-                                                <td className="px-4 py-3 text-center">
-                                                    <button onClick={() => deleteStaff(index)} className="text-[#DBCCC0] hover:text-[#A66E6E] p-1 transition">
-                                                        <X className="w-5 h-5"/>
-                                                    </button>
-                                                </td>
-                                              )}
-                                          </tr>
-                                      );
-                                  })}
-                              </tbody>
-                          </table>
-                      </div>
+                {/* 메인 리스트 컨테이너 */}
+                <div className="bg-white rounded-2xl shadow-sm p-4 md:p-8 border border-[#F0EAE4]">
+                    <div className="flex justify-between items-end mb-6 pb-6 border-b border-[#F0EAE4]">
+                        <div>
+                            <h2 className="text-xl md:text-2xl font-bold text-[#5C5552] flex items-center gap-2">
+                               <User className="w-6 h-6 text-[#A4907C]" /> 
+                               <span className="hidden md:inline">직원 연차 현황 (2026년)</span>
+                               <span className="md:hidden">직원 리스트</span>
+                            </h2>
+                            <p className="text-[#A4907C] text-xs md:text-sm mt-2 flex items-center gap-2">
+                                {statusMsg ? (
+                                    <span className="flex items-center gap-1 text-green-600 font-medium"><CheckCircle className="w-4 h-4"/> {statusMsg}</span>
+                                ) : (
+                                    <span className="flex items-center gap-1"><RefreshCw className="w-4 h-4"/> 자동 동기화</span>
+                                )}
+                            </p>
+                        </div>
+                        {session && (
+                          <button onClick={addStaff} className={`${theme.primary} text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md transition`}>
+                              <Plus className="w-4 h-4" /> <span className="hidden md:inline">직원 추가</span><span className="md:hidden">추가</span>
+                          </button>
+                        )}
+                    </div>
 
-                      {/* ======================= */}
-                      {/* 2. 모바일 뷰 (카드 리스트) */}
-                      {/* ======================= */}
-                      <div className="md:hidden space-y-4">
-                        {staffData.map((staff, index) => {
-                           const remain = (parseFloat(staff.total) || 0) - (parseFloat(staff.used) || 0);
-                           const isSessionActive = !!session;
+                    {loading ? (
+                        <div className="py-20 text-center text-[#8D7B68] animate-pulse">데이터를 불러오는 중입니다...</div>
+                    ) : (
+                        <>
+                          {/* ======================= */}
+                          {/* 1. 데스크탑 뷰 (테이블) */}
+                          {/* ======================= */}
+                          <div className="hidden md:block overflow-x-auto rounded-xl border border-[#F0EAE4]">
+                              <table className="w-full text-sm text-left text-[#5C5552]">
+                                  <thead className="text-xs text-[#8D7B68] uppercase bg-[#F2EBE5]">
+                                      <tr>
+                                          <th className="px-4 py-4 text-center w-12 font-bold">No</th>
+                                          <th className="px-4 py-4 font-bold">성명</th>
+                                          <th className="px-4 py-4 font-bold">직급</th>
+                                          <th className="px-4 py-4 w-32 font-bold">입사일</th>
+                                          <th className="px-4 py-4 text-center bg-[#EBE5DD] font-bold">발생</th>
+                                          <th className="px-4 py-4 text-center bg-[#F5E6E6] text-[#A66E6E] font-bold">사용</th>
+                                          <th className="px-4 py-4 text-center bg-[#E6F0E6] text-[#6E9675] font-bold">잔여</th>
+                                          <th className="px-4 py-4 font-bold">비고</th>
+                                          {session && <th className="px-4 py-4 text-center w-16 font-bold">관리</th>}
+                                      </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-[#F0EAE4]">
+                                      {staffData.map((staff, index) => {
+                                          const remain = (parseFloat(staff.total) || 0) - (parseFloat(staff.used) || 0);
+                                          const isSessionActive = !!session;
+                                          
+                                          return (
+                                              <tr key={index} className="bg-white hover:bg-[#F9F7F2] transition">
+                                                  <td className="px-4 py-3 text-center text-[#A4907C]">{index + 1}</td>
+                                                  <td className="px-4 py-3">
+                                                      <input type="text" value={staff.name} 
+                                                          onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
+                                                          onBlur={handleBlur} 
+                                                          readOnly={!isSessionActive}
+                                                          className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] placeholder-[#DBCCC0] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`} 
+                                                          placeholder="이름" 
+                                                      />
+                                                  </td>
+                                                  <td className="px-4 py-3">
+                                                      <input type="text" value={staff.role} 
+                                                          onChange={(e) => handleUpdate(index, 'role', e.target.value)} 
+                                                          onBlur={handleBlur} 
+                                                          readOnly={!isSessionActive}
+                                                          className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] text-[#8D8D8D] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`}
+                                                          placeholder="직급" 
+                                                      />
+                                                  </td>
+                                                  <td className="px-4 py-3">
+                                                      <input type="date" value={staff.date} 
+                                                          onChange={(e) => handleUpdate(index, 'date', e.target.value)} 
+                                                          onBlur={handleBlur} 
+                                                          readOnly={!isSessionActive}
+                                                          className={`w-full bg-transparent outline-none text-[#5C5552] ${!isSessionActive ? 'cursor-default' : 'cursor-pointer'}`}
+                                                      />
+                                                  </td>
+                                                  <td className="px-4 py-3 text-center">
+                                                      <input type="number" value={staff.total} 
+                                                          readOnly={true} 
+                                                          className="w-12 text-center rounded py-1 outline-none font-bold bg-transparent border-none text-[#5C5552] cursor-default" 
+                                                      />
+                                                  </td>
+                                                  <td className="px-4 py-3 text-center">
+                                                      <input type="number" value={staff.used} 
+                                                          readOnly={true}
+                                                          className="w-12 text-center rounded py-1 font-bold outline-none bg-transparent border-none text-[#A66E6E] cursor-default" 
+                                                      />
+                                                  </td>
+                                                  <td className="px-4 py-3 text-center">
+                                                      <span className={`font-bold text-lg ${remain <= 0 ? 'text-[#A66E6E]' : 'text-[#6E9675]'}`}>{remain}</span>
+                                                  </td>
+                                                  <td className="px-4 py-3">
+                                                      <input type="text" value={staff.memo} 
+                                                          onChange={(e) => handleUpdate(index, 'memo', e.target.value)} 
+                                                          onBlur={handleBlur} 
+                                                          readOnly={!isSessionActive}
+                                                          className="w-full bg-transparent outline-none text-[#8D8D8D]" 
+                                                          placeholder="메모" 
+                                                      />
+                                                  </td>
+                                                  {session && (
+                                                    <td className="px-4 py-3 text-center">
+                                                        <button onClick={() => deleteStaff(index)} className="text-[#DBCCC0] hover:text-[#A66E6E] p-1 transition">
+                                                            <X className="w-5 h-5"/>
+                                                        </button>
+                                                    </td>
+                                                  )}
+                                              </tr>
+                                          );
+                                      })}
+                                  </tbody>
+                              </table>
+                          </div>
 
-                           return (
-                             <div key={index} className="bg-white p-5 rounded-2xl shadow-sm border border-[#F0EAE4] flex flex-col gap-3 relative">
-                                {/* 상단: 이름, 직급, 삭제버튼 */}
-                                <div className="flex justify-between items-start">
-                                   <div className="flex items-end gap-2">
-                                     <input type="text" value={staff.name} 
-                                        onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
-                                        onBlur={handleBlur} 
-                                        readOnly={!isSessionActive}
-                                        className="text-lg font-bold w-20 bg-transparent outline-none border-b border-[#F0EAE4] focus:border-[#8D7B68] placeholder-[#DBCCC0]"
-                                        placeholder="이름"
-                                     />
-                                     <input type="text" value={staff.role} 
-                                        onChange={(e) => handleUpdate(index, 'role', e.target.value)} 
-                                        onBlur={handleBlur} 
-                                        readOnly={!isSessionActive}
-                                        className="text-sm text-[#8D8D8D] w-16 bg-transparent outline-none focus:text-[#5C5552]"
-                                        placeholder="직급"
-                                     />
-                                   </div>
-                                   {session && (
-                                     <button onClick={() => deleteStaff(index)} className="text-[#DBCCC0] hover:text-[#A66E6E] p-1">
-                                        <Trash2 className="w-4 h-4"/>
-                                     </button>
-                                   )}
-                                </div>
+                          {/* ======================= */}
+                          {/* 2. 모바일 뷰 (카드 리스트) */}
+                          {/* ======================= */}
+                          <div className="md:hidden space-y-4">
+                            {staffData.map((staff, index) => {
+                               const remain = (parseFloat(staff.total) || 0) - (parseFloat(staff.used) || 0);
+                               const isSessionActive = !!session;
 
-                                {/* 중간: 입사일 */}
-                                <div className="flex items-center gap-2 text-sm text-[#8D7B68]">
-                                   <span className="text-xs bg-[#F2EBE5] px-2 py-0.5 rounded text-[#8D7B68]">입사일</span>
-                                   <input type="date" value={staff.date} 
-                                        onChange={(e) => handleUpdate(index, 'date', e.target.value)} 
-                                        onBlur={handleBlur} 
-                                        readOnly={!isSessionActive}
-                                        className="bg-transparent outline-none text-[#5C5552] text-sm w-32"
-                                   />
-                                </div>
+                               return (
+                                 <div key={index} className="bg-white p-5 rounded-2xl shadow-sm border border-[#F0EAE4] flex flex-col gap-3 relative">
+                                    <div className="flex justify-between items-start">
+                                       <div className="flex items-end gap-2">
+                                         <input type="text" value={staff.name} 
+                                            onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
+                                            onBlur={handleBlur} 
+                                            readOnly={!isSessionActive}
+                                            className="text-lg font-bold w-20 bg-transparent outline-none border-b border-[#F0EAE4] focus:border-[#8D7B68] placeholder-[#DBCCC0]"
+                                            placeholder="이름"
+                                         />
+                                         <input type="text" value={staff.role} 
+                                            onChange={(e) => handleUpdate(index, 'role', e.target.value)} 
+                                            onBlur={handleBlur} 
+                                            readOnly={!isSessionActive}
+                                            className="text-sm text-[#8D8D8D] w-16 bg-transparent outline-none focus:text-[#5C5552]"
+                                            placeholder="직급"
+                                         />
+                                       </div>
+                                       {session && (
+                                         <button onClick={() => deleteStaff(index)} className="text-[#DBCCC0] hover:text-[#A66E6E] p-1">
+                                            <Trash2 className="w-4 h-4"/>
+                                         </button>
+                                       )}
+                                    </div>
 
-                                {/* 하단: 연차 통계 (카드 형태) */}
-                                <div className="grid grid-cols-3 gap-2 mt-2">
-                                   <div className="bg-[#F8F6F4] p-2 rounded-xl text-center">
-                                      <div className="text-xs text-[#8D7B68] mb-1">발생</div>
-                                      <div className="font-bold text-[#5C5552]">{staff.total}</div>
-                                   </div>
-                                   <div className="bg-[#FCF5F5] p-2 rounded-xl text-center">
-                                      <div className="text-xs text-[#A66E6E] mb-1">사용</div>
-                                      <div className="font-bold text-[#A66E6E]">{staff.used}</div>
-                                   </div>
-                                   <div className="bg-[#EEF5EF] p-2 rounded-xl text-center">
-                                      <div className="text-xs text-[#6E9675] mb-1">잔여</div>
-                                      <div className={`font-bold ${remain <= 0 ? 'text-[#A66E6E]' : 'text-[#6E9675]'}`}>{remain}</div>
-                                   </div>
-                                </div>
+                                    <div className="flex items-center gap-2 text-sm text-[#8D7B68]">
+                                       <span className="text-xs bg-[#F2EBE5] px-2 py-0.5 rounded text-[#8D7B68]">입사일</span>
+                                       <input type="date" value={staff.date} 
+                                            onChange={(e) => handleUpdate(index, 'date', e.target.value)} 
+                                            onBlur={handleBlur} 
+                                            readOnly={!isSessionActive}
+                                            className="bg-transparent outline-none text-[#5C5552] text-sm w-32"
+                                       />
+                                    </div>
 
-                                {/* 메모 */}
-                                <div className="mt-2 pt-2 border-t border-[#F0EAE4]">
-                                  <input type="text" value={staff.memo} 
-                                      onChange={(e) => handleUpdate(index, 'memo', e.target.value)} 
-                                      onBlur={handleBlur} 
-                                      readOnly={!isSessionActive}
-                                      className="w-full text-sm bg-transparent outline-none text-[#8D8D8D] placeholder-gray-300" 
-                                      placeholder="메모를 입력하세요..." 
-                                  />
-                                </div>
-                             </div>
-                           );
-                        })}
-                      </div>
-                    </>
-                )}
+                                    <div className="grid grid-cols-3 gap-2 mt-2">
+                                       <div className="bg-[#F8F6F4] p-2 rounded-xl text-center">
+                                          <div className="text-xs text-[#8D7B68] mb-1">발생</div>
+                                          <div className="font-bold text-[#5C5552]">{staff.total}</div>
+                                       </div>
+                                       <div className="bg-[#FCF5F5] p-2 rounded-xl text-center">
+                                          <div className="text-xs text-[#A66E6E] mb-1">사용</div>
+                                          <div className="font-bold text-[#A66E6E]">{staff.used}</div>
+                                       </div>
+                                       <div className="bg-[#EEF5EF] p-2 rounded-xl text-center">
+                                          <div className="text-xs text-[#6E9675] mb-1">잔여</div>
+                                          <div className={`font-bold ${remain <= 0 ? 'text-[#A66E6E]' : 'text-[#6E9675]'}`}>{remain}</div>
+                                       </div>
+                                    </div>
+
+                                    <div className="mt-2 pt-2 border-t border-[#F0EAE4]">
+                                      <input type="text" value={staff.memo} 
+                                          onChange={(e) => handleUpdate(index, 'memo', e.target.value)} 
+                                          onBlur={handleBlur} 
+                                          readOnly={!isSessionActive}
+                                          className="w-full text-sm bg-transparent outline-none text-[#8D8D8D] placeholder-gray-300" 
+                                          placeholder="메모를 입력하세요..." 
+                                      />
+                                    </div>
+                                 </div>
+                               );
+                            })}
+                          </div>
+                        </>
+                    )}
+                </div>
             </div>
           </div>
         )}
 
-        {/* 탭 2: 연차 신청서 (데스크탑에서만 보임 - md:hidden 처리 대신 탭 버튼을 숨겼으므로 여기는 렌더링 되어도 접근 불가하지만, 안전하게 숨김 처리 가능) */}
+        {/* 탭 2: 연차 신청서 (데스크탑 전용) */}
         {activeTab === 'form' && (
           <div className="p-8 bg-[#FDFBF7] flex flex-col items-center">
-             {/* ... 기존 신청서 코드 유지 ... */}
              <div className="w-full flex justify-end mb-6 print:hidden">
                 <button onClick={() => window.print()} className={`flex items-center gap-2 ${theme.primary} text-white px-5 py-2.5 rounded-xl transition shadow-md text-sm font-bold`}>
                     <Printer className="w-4 h-4" /> 인쇄하기
@@ -420,7 +545,6 @@ export default function DentalLeaveApp() {
             </div>
 
             <div className="bg-white p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] relative rounded-sm print:shadow-none print:w-full print:m-0">
-                {/* ... 신청서 내부 내용은 기존과 동일 ... */}
                 <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 tracking-widest text-[#222] font-serif">연차(휴가) 신청서</h2>
                 
                 <div className="flex justify-end mb-8">
