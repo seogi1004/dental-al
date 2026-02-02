@@ -19,37 +19,6 @@ const theme = {
   accent: "text-[#A4907C]"
 };
 
-// [시뮬레이션 데이터]
-const MOCK_DB_DATA = [
-  { 
-    name: "최지원", 
-    role: "실장", 
-    date: "2018-03-01", 
-    total: 18, 
-    used: 5, 
-    memo: "", 
-    leaves: ["2026-02-03", "2026-02-04", "2026-02-20"] 
-  },
-  { 
-    name: "홍재석", 
-    role: "원장", 
-    date: "2015-01-01", 
-    total: 0, 
-    used: 0, 
-    memo: "", 
-    leaves: ["2026-02-14"] 
-  },
-  { 
-    name: "김민지", 
-    role: "치위생사", 
-    date: "2024-01-10", 
-    total: 15, 
-    used: 2, 
-    memo: "", 
-    leaves: ["2026-02-03", "2026-02-10"] 
-  }
-];
-
 export default function DentalLeaveApp() {
   const { data: session, status } = useSession();
   const loadingSession = status === "loading";
@@ -113,17 +82,15 @@ export default function DentalLeaveApp() {
     try {
       const res = await fetch('/api/sheets'); 
       if (!res.ok) {
-        setStaffData(MOCK_DB_DATA); 
-        setStatusMsg('데이터 로드 완료 (데모)');
-        return;
+        throw new Error(`HTTP Error: ${res.status}`);
       }
       const data = await res.json();
       setStaffData(data && data.length > 0 ? data : []);
       setStatusMsg('동기화 완료');
     } catch (error) {
       console.error("Fetch Error:", error);
-      setStaffData(MOCK_DB_DATA);
-      setStatusMsg('연결 오류 (데모 모드)');
+      setStaffData([]); // 에러 시 빈 배열 처리
+      setStatusMsg('데이터 로드 실패');
     } finally {
       setLoading(false);
       setTimeout(() => setStatusMsg(''), 3000);
@@ -291,7 +258,7 @@ export default function DentalLeaveApp() {
     );
   };
 
-  // 3. 데스크탑용 캘린더 뷰 (NEW)
+  // 3. 데스크탑용 캘린더 뷰
   const DesktopCalendar = () => {
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth(); // 0 ~ 11
@@ -357,7 +324,6 @@ export default function DentalLeaveApp() {
                 const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
                 const dateObj = new Date(year, month, day);
                 const dayOfWeek = dateObj.getDay();
-                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
                 return (
                     <div key={day} className={`h-24 border-r border-b border-[#F0EAE4] p-1 relative hover:bg-[#FDFBF7] transition group ${isToday ? 'bg-[#FFF9F0]' : ''}`}>
