@@ -8,6 +8,7 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
+          // ★ 필수: 구글 시트 권한, 오프라인 액세스(토큰 갱신), 로그인 강제 확인
           scope: "openid email profile https://www.googleapis.com/auth/spreadsheets",
           prompt: "consent",
           access_type: "offline",
@@ -16,6 +17,7 @@ export const authOptions = {
       }
     }),
   ],
+  secret: process.env.NEXTAUTH_SECRET, // ★ 필수
   callbacks: {
     async jwt({ token, account }) {
       if (account) {
@@ -28,7 +30,6 @@ export const authOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
 };
 
 export default NextAuth(authOptions);
