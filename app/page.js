@@ -6,8 +6,8 @@ import {
   Calendar, User, FileText, LogOut, X, LogIn
 } from 'lucide-react';
 
-// [수정됨] 미리보기 환경에서 실행 가능하도록 next-auth 패키지 제거 및 시뮬레이션으로 대체
-// 실제 배포 시에는 아래 주석을 해제하고 시뮬레이션 코드를 삭제하세요.
+// [수정됨] 프리뷰 환경에서 실행하기 위해 next-auth 패키지 대신 로컬 상태로 대체합니다.
+// 실제 Vercel 배포 시에는 아래 주석을 해제하고 시뮬레이션 코드를 삭제하세요.
 import { useSession, signIn, signOut } from "next-auth/react";
 
 const theme = {
@@ -22,8 +22,8 @@ const theme = {
 
 export default function DentalLeaveApp() {
   // ==================================================================================
-  // [인증 시뮬레이션]
-  // Vercel 배포 시에는 이 부분을 지우고 useSession 훅을 사용하세요.
+  // [인증 시뮬레이션 - 프리뷰용]
+  // 실제 배포 시에는 이 부분을 삭제하고 const { data: session, status } = useSession(); 을 사용하세요.
   // ==================================================================================
   const [session, setSession] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
@@ -37,47 +37,57 @@ export default function DentalLeaveApp() {
   }, []);
 
   const signIn = () => {
-    setSession({
-      user: {
-        name: "더데이치과 관리자",
-        email: "admin@theday.com"
-      },
-      accessToken: "mock_token" // API 테스트용 가짜 토큰
-    });
+    // 로그인 시뮬레이션
+    setLoadingSession(true);
+    setTimeout(() => {
+      setSession({
+        user: {
+          name: "더데이치과 관리자",
+          email: "admin@theday.com",
+          image: null
+        }
+      });
+      setLoadingSession(false);
+    }, 800);
   };
 
   const signOut = () => {
-    setSession(null);
+    setLoadingSession(true);
+    setTimeout(() => {
+      setSession(null);
+      setLoadingSession(false);
+    }, 500);
   };
   // ==================================================================================
 
+  // 기본 탭: 현황표('list')로 고정 (비로그인 시에도 볼 수 있음)
   const [activeTab, setActiveTab] = useState('list');
   const [staffData, setStaffData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
   const [saveTimeout, setSaveTimeout] = useState(null);
 
-  // 데이터 불러오기 (GET)
+  // ==================================================================================
+  // 2. API 통신 함수
+  // ==================================================================================
+  
   const fetchSheetData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/sheets'); 
       
       if (!res.ok) {
-        console.warn("데이터 로드 실패 (권한 혹은 설정 확인 필요)");
-        // API가 동작하지 않을 때 UI 확인을 위한 더미 데이터
-        if (!session) {
-             // 비로그인 상태일 때 보여줄 샘플 (실제로는 API가 빈 배열이나 공개 데이터를 줌)
-             setStaffData([]);
-        } else {
-             setStaffData([]); 
-        }
+        // API 오류 시 (권한 없음 등)
+        console.warn("데이터 로드 실패 (API 응답 오류 - 데모 데이터 로드)");
+        // 데모 환경에서는 빈 배열 대신 예시 데이터를 보여줄 수도 있으나, 요청대로 빈 배열 처리
+        setStaffData([]); 
         setStatusMsg('데이터 로드 실패 (데모)');
         return;
       }
 
       const data = await res.json();
-      setStaffData(data.length > 0 ? data : []);
+      // 데이터가 있으면 설정, 없으면 빈 배열
+      setStaffData(data && data.length > 0 ? data : []);
       setStatusMsg('동기화 완료');
     } catch (error) {
       console.error("Fetch Error:", error);
@@ -86,10 +96,10 @@ export default function DentalLeaveApp() {
       setLoading(false);
       setTimeout(() => setStatusMsg(''), 3000);
     }
-  }, [session]);
+  }, []);
 
-  // 데이터 저장하기 (POST)
   const saveSheetData = async (newData) => {
+    // 실제 로그인 체크
     if (!session) {
         alert("로그인이 필요합니다.");
         return;
@@ -103,30 +113,39 @@ export default function DentalLeaveApp() {
         body: JSON.stringify(newData || staffData),
       });
       
-      if (!res.ok) throw new Error('Failed to save');
+      if (!res.ok) {
+        // const errData = await res.json(); // 데모 환경이라 실제 API 응답이 없을 수 있음
+        throw new Error('Failed to save (Demo Mode)');
+      }
+      
       setStatusMsg('저장됨');
       setTimeout(() => setStatusMsg(''), 2000);
     } catch (error) {
       console.error("Save Error:", error);
-      setStatusMsg('저장 실패 (데모)');
-      // alert("저장에 실패했습니다."); // 데모 환경이라 에러가 당연하므로 알림 생략
+      setStatusMsg('저장 실패');
+      // 실제 환경에서는 에러 메시지를 띄우지만, 데모에서는 콘솔만 기록
+      // alert(`저장에 실패했습니다: ${error.message}`);
     }
   };
 
-  // 초기 데이터 로드 & 탭 전환
+  // ==================================================================================
+  // 3. 이벤트 핸들러
+  // ==================================================================================
+
+  // 초기 로드 및 탭 전환 시 데이터 갱신
   useEffect(() => {
     if (activeTab === 'list') {
       fetchSheetData();
     }
   }, [activeTab, fetchSheetData]);
 
-  // 입력 핸들러
   const handleUpdate = (index, field, value) => {
-    if (!session) return; 
+    if (!session) return; // 비로그인 시 수정 불가
 
     const newData = [...staffData];
     newData[index][field] = value;
     
+    // 날짜 변경 시 연차 자동 계산
     if (field === 'date' && value) {
       const joinDate = new Date(value);
       const today = new Date();
@@ -137,8 +156,9 @@ export default function DentalLeaveApp() {
       }
 
       let leave = 0;
-      if (years < 1) leave = 11; 
-      else {
+      if (years < 1) {
+        leave = 11; 
+      } else {
         leave = 15 + Math.floor((years - 1) / 2);
         if (leave > 25) leave = 25;
       }
@@ -147,6 +167,7 @@ export default function DentalLeaveApp() {
 
     setStaffData(newData);
 
+    // 자동 저장 (Debounce)
     if (saveTimeout) clearTimeout(saveTimeout);
     const timeoutId = setTimeout(() => {
       saveSheetData(newData);
@@ -161,11 +182,19 @@ export default function DentalLeaveApp() {
   };
 
   const addStaff = () => {
-    if (!session) return;
+    if (!session) {
+      alert("로그인이 필요한 기능입니다.");
+      return;
+    }
 
     const newItem = {
-      name: "", role: "직원", date: new Date().toISOString().split('T')[0],
-      total: 11, used: 0, memo: "", isNew: true 
+      name: "", 
+      role: "직원", 
+      date: new Date().toISOString().split('T')[0],
+      total: 11, 
+      used: 0, 
+      memo: "",
+      isNew: true 
     };
     const newData = [...staffData, newItem];
     setStaffData(newData);
@@ -174,12 +203,17 @@ export default function DentalLeaveApp() {
 
   const deleteStaff = (index) => {
     if (!session) return;
+
     if (confirm("정말 삭제하시겠습니까? 구글 시트에서도 삭제됩니다.")) {
       const newData = staffData.filter((_, i) => i !== index);
       setStaffData(newData);
       saveSheetData(newData);
     }
   };
+
+  // ==================================================================================
+  // 4. 렌더링
+  // ==================================================================================
 
   if (loadingSession) {
     return <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] text-[#8D7B68]">로딩 중...</div>;
@@ -189,7 +223,7 @@ export default function DentalLeaveApp() {
     <div className={`min-h-screen ${theme.bg} ${theme.text} p-4 md:p-8 flex justify-center font-sans`}>
       <div className={`w-full max-w-5xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px]`}>
         
-        {/* 헤더 */}
+        {/* 헤더 영역 */}
         <div className="bg-[#8D7B68] p-6 text-white flex flex-col md:flex-row justify-between items-center shadow-md print:hidden">
             <h1 className="text-2xl font-bold flex items-center gap-3 tracking-wide">
                 <span className="text-[#FDFBF7]">더데이치과</span> 
@@ -197,6 +231,7 @@ export default function DentalLeaveApp() {
             </h1>
             
             <div className="flex gap-3 mt-4 md:mt-0 items-center">
+                {/* 탭 메뉴 */}
                 <div className="bg-[#7A6A59] p-1.5 rounded-full shadow-inner flex">
                   <button 
                     onClick={() => setActiveTab('list')} 
@@ -212,6 +247,7 @@ export default function DentalLeaveApp() {
                   </button>
                 </div>
                 
+                {/* 로그인 상태 버튼 */}
                 {session ? (
                   <button 
                     onClick={() => signOut()} 
@@ -222,7 +258,7 @@ export default function DentalLeaveApp() {
                   </button>
                 ) : (
                   <button 
-                    onClick={() => signIn()} 
+                    onClick={() => signIn("google")} 
                     className="ml-2 bg-[#7A6A59] hover:bg-[#6B5D4D] text-[#EBE5DD] hover:text-white px-4 py-2 rounded-full transition text-sm font-bold flex items-center gap-2 shadow-sm"
                     title="관리자 로그인"
                   >
@@ -251,6 +287,7 @@ export default function DentalLeaveApp() {
                             )}
                         </p>
                     </div>
+                    {/* 직원 추가 버튼: 로그인 시에만 보임 */}
                     {session && (
                       <button onClick={addStaff} className={`${theme.primary} text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md transition`}>
                           <Plus className="w-4 h-4" /> 직원 추가
