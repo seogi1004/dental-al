@@ -226,6 +226,50 @@ export default function DentalLeaveApp() {
     }
   };
 
+  const handleLeaveClick = async (staffName, originalDate) => {
+    if (!session) return;
+    
+    const newValue = prompt("연차 수정/삭제\n\n- 수정: 내용을 변경하세요 (예: 1-15 PM)\n- 삭제: 내용을 모두 지우세요\n- 취소: 취소 버튼 클릭", originalDate);
+    
+    if (newValue === null) return;
+
+    if (newValue.trim() === "") {
+        if (confirm("정말 삭제하시겠습니까?")) {
+            setStatusMsg("삭제 중...");
+            try {
+                const res = await fetch('/api/calendar', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: staffName, date: originalDate })
+                });
+                if (!res.ok) throw new Error("Delete failed");
+                alert("삭제되었습니다.");
+                fetchSheetData();
+            } catch (e) {
+                console.error(e);
+                alert("삭제 실패: " + e.message);
+                setStatusMsg("오류 발생");
+            }
+        }
+    } else if (newValue.trim() !== originalDate) {
+        setStatusMsg("수정 중...");
+        try {
+            const res = await fetch('/api/calendar', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: staffName, oldDate: originalDate, newDate: newValue.trim() })
+            });
+            if (!res.ok) throw new Error("Update failed");
+            alert("수정되었습니다.");
+            fetchSheetData();
+        } catch (e) {
+            console.error(e);
+            alert("수정 실패: " + e.message);
+            setStatusMsg("오류 발생");
+        }
+    }
+  };
+
   // ==================================================================================
   // 컴포넌트: 대시보드 위젯
   // ==================================================================================
@@ -282,7 +326,9 @@ export default function DentalLeaveApp() {
               const badgeColor = item.type === 'AM' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200' : item.type === 'PM' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200' : 'bg-[#EBE5DD] dark:bg-[#2C2C2C] text-[#8D7B68] dark:text-[#A4907C]';
               
               return (
-                <div key={idx} className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 ${isPast ? 'bg-[#F5F5F5] dark:bg-[#2A2A2A] opacity-60' : 'bg-[#FDFBF7] dark:bg-[#121212] border border-[#EBE5DD] dark:border-[#444444]'}`}>
+                <div key={idx} 
+                     onClick={() => handleLeaveClick(item.name, item.original)}
+                     className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 cursor-pointer hover:bg-[#F2EBE5] dark:hover:bg-[#252525] active:scale-[0.98] transition-transform ${isPast ? 'bg-[#F5F5F5] dark:bg-[#2A2A2A] opacity-60' : 'bg-[#FDFBF7] dark:bg-[#121212] border border-[#EBE5DD] dark:border-[#444444]'}`}>
                   <div className="flex items-center gap-3">
                     <span className={`text-sm font-bold ${isPast ? 'text-gray-500 dark:text-gray-400' : 'text-[#8D7B68] dark:text-[#A4907C]'}`}>
                       {formatDate(item.original)}
@@ -334,7 +380,8 @@ export default function DentalLeaveApp() {
                     list.push({ 
                         name: staff.name, 
                         role: staff.role,
-                        type: parsed.type 
+                        type: parsed.type,
+                        original: leaf
                     });
                 }
             });
@@ -390,7 +437,11 @@ export default function DentalLeaveApp() {
                         
                         <div className="mt-6 flex flex-col gap-1 overflow-y-auto max-h-[calc(100%-24px)] custom-scrollbar">
                             {leaves.map((person, idx) => (
-                                <div key={idx} className="text-xs bg-[#F2EBE5] dark:bg-[#2D2D2D] text-[#5C5552] dark:text-[#E0E0E0] px-1.5 py-0.5 rounded border border-[#EBE5DD] dark:border-[#444444] truncate flex items-center justify-between" title={`${person.name} (${person.role})`}>
+                                <div key={idx} 
+                                     onClick={() => handleLeaveClick(person.name, person.original)}
+                                     className="text-xs bg-[#F2EBE5] dark:bg-[#2D2D2D] text-[#5C5552] dark:text-[#E0E0E0] px-1.5 py-0.5 rounded border border-[#EBE5DD] dark:border-[#444444] truncate flex items-center justify-between cursor-pointer hover:opacity-70 transition-opacity" 
+                                     title={`${person.name} (${person.role})`}
+                                >
                                     <div>
                                         <strong>{person.name}</strong> <span className="opacity-70 text-[10px]">{person.role}</span>
                                     </div>
@@ -423,8 +474,8 @@ export default function DentalLeaveApp() {
                     1. 역할 분리
                 </h4>
                 <ul className="list-disc pl-4 space-y-1">
-                    <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">웹 (여기)</strong>: 조회, 직원 관리(추가/삭제), 신청서 인쇄</li>
-                    <li><strong className="text-green-600 dark:text-green-400">구글 시트</strong>: 실제 연차 날짜 입력 및 수정</li>
+                    <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">웹 (여기)</strong>: 조회, 직원 관리, 연차 수정/삭제</li>
+                    <li><strong className="text-green-600 dark:text-green-400">구글 시트</strong>: 연차 날짜 <strong>추가</strong> (드래그 입력)</li>
                 </ul>
             </div>
 
@@ -433,10 +484,10 @@ export default function DentalLeaveApp() {
             {/* 섹션 2 */}
             <div>
                 <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2">
-                    2. 연차 등록 방법
+                    2. 연차 등록 및 관리
                 </h4>
                 <p className="mb-2">구글 시트의 <span className="bg-[#F2EBE5] dark:bg-[#2D2D2D] px-1 rounded text-xs font-mono">2026년</span> 탭에 날짜를 입력하세요.</p>
-                <div className="bg-[#FDFBF7] dark:bg-[#121212] p-3 rounded-lg border border-[#F0EAE4] dark:border-[#333333] space-y-2 font-mono text-xs">
+                <div className="bg-[#FDFBF7] dark:bg-[#121212] p-3 rounded-lg border border-[#F0EAE4] dark:border-[#333333] space-y-2 font-mono text-xs mb-3">
                     <div className="flex justify-between">
                         <span>종일 연차</span>
                         <span className="font-bold text-[#5C5552] dark:text-[#E0E0E0]">01/15</span>
@@ -450,6 +501,9 @@ export default function DentalLeaveApp() {
                         <span className="font-bold">01/15 PM</span>
                     </div>
                 </div>
+                <p className="text-xs text-[#5C5552] dark:text-[#A0A0A0] bg-[#F2EBE5] dark:bg-[#2D2D2D] p-2 rounded">
+                    💡 <strong>Tip:</strong> 캘린더의 날짜를 클릭하면 <strong>수정/삭제</strong>가 가능합니다!
+                </p>
             </div>
 
             <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
