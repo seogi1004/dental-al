@@ -439,15 +439,15 @@ export default function DentalLeaveApp() {
                 <div className="bg-[#FDFBF7] dark:bg-[#121212] p-3 rounded-lg border border-[#F0EAE4] dark:border-[#333333] space-y-2 font-mono text-xs">
                     <div className="flex justify-between">
                         <span>종일 연차</span>
-                        <span className="font-bold text-[#5C5552] dark:text-[#E0E0E0]">1/15</span>
+                        <span className="font-bold text-[#5C5552] dark:text-[#E0E0E0]">01/15</span>
                     </div>
                     <div className="flex justify-between text-yellow-700 dark:text-yellow-400">
                         <span>오전 반차</span>
-                        <span className="font-bold">1/15 AM</span>
+                        <span className="font-bold">01/15 AM</span>
                     </div>
                     <div className="flex justify-between text-orange-700 dark:text-orange-400">
                         <span>오후 반차</span>
-                        <span className="font-bold">1/15 PM</span>
+                        <span className="font-bold">01/15 PM</span>
                     </div>
                 </div>
             </div>
