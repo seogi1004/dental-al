@@ -29,7 +29,9 @@ export default async function handler(req, res) {
 
       const sheets = google.sheets({ version: 'v4', auth });
       const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-      const SHEET_NAME = '2026년'; // 시트 이름
+      
+      // ★ 시트 이름 변경: 2026년 -> 연차계산
+      const SHEET_NAME = '연차계산'; 
 
       const newData = req.body;
       const rows = newData.map(item => [
@@ -72,7 +74,9 @@ export default async function handler(req, res) {
 
         const sheets = google.sheets({ version: 'v4', auth });
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-        const SHEET_NAME = '2026년';
+        
+        // ★ 시트 이름 변경: 2026년 -> 연차계산
+        const SHEET_NAME = '연차계산';
 
         const response = await sheets.spreadsheets.values.get({
           spreadsheetId,
@@ -88,30 +92,26 @@ export default async function handler(req, res) {
       // 2. 로그인이 안 되어 있다면 -> CSV Fetch (공개 시트 읽기)
       else {
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-        // gid=0은 첫번째 시트입니다. 2026년 시트가 첫번째 탭에 있어야 합니다.
+        // gid=0은 첫번째 탭을 의미합니다. '연차계산' 시트가 첫 번째에 있어야 합니다.
         const csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=0`;
         
         const response = await fetch(csvUrl);
         
         if (!response.ok) {
-          // 시트가 비공개이거나 URL이 잘못된 경우
           console.error("CSV Fetch Failed:", response.status);
-          return res.status(200).json([]); // 에러 대신 빈 배열 반환하여 화면은 뜨게 함
+          return res.status(200).json([]);
         }
 
         const csvText = await response.text();
-        const rows = parseCSV(csvText); // CSV 파싱
+        const rows = parseCSV(csvText);
 
-        // 헤더(1행) 제외하고 2행부터 데이터로 사용
         if (rows.length <= 1) return res.status(200).json([]);
         
-        // 2행부터 매핑 (CSV 파서는 전체를 가져오므로 slice(1) 필요)
         return res.status(200).json(mapRowsToData(rows.slice(1)));
       }
 
     } catch (error) {
       console.error("Fetch Error:", error);
-      // 에러가 나도 빈 배열을 줘서 프론트엔드가 멈추지 않게 함
       return res.status(200).json([]);
     }
   }
@@ -129,7 +129,7 @@ function mapRowsToData(rows) {
   }));
 }
 
-// 헬퍼 함수: 간단한 CSV 파서 (쉼표가 포함된 셀 데이터 처리)
+// 헬퍼 함수: 간단한 CSV 파서
 function parseCSV(text) {
   const rows = [];
   let currentRow = [];
@@ -143,7 +143,7 @@ function parseCSV(text) {
     if (char === '"') {
       if (insideQuote && nextChar === '"') {
         currentCell += '"';
-        i++; // skip next quote
+        i++; 
       } else {
         insideQuote = !insideQuote;
       }
