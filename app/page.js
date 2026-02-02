@@ -168,7 +168,7 @@ export default function DentalLeaveApp() {
     }
     const newItem = {
       name: "", 
-      role: "직원", 
+      role: "사원", 
       date: new Date().toISOString().split('T')[0],
       total: 11, 
       used: 0, 
