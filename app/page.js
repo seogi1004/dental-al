@@ -595,18 +595,18 @@ export default function DentalLeaveApp() {
                               {/* 데스크탑 뷰 (테이블) */}
                               {/* ======================= */}
                               <div className="hidden md:block overflow-x-auto rounded-xl border border-[#F0EAE4] dark:border-[#333333]">
-                                  <table className="w-full text-sm text-left text-[#5C5552] dark:text-[#E0E0E0]">
-                                      <thead className="text-xs text-[#8D7B68] dark:text-[#A4907C] uppercase bg-[#F2EBE5] dark:bg-[#2D2D2D]">
+                                  <table className="w-full text-xs text-left text-[#5C5552] dark:text-[#E0E0E0]">
+                                      <thead className="text-[11px] text-[#8D7B68] dark:text-[#A4907C] uppercase bg-[#F2EBE5] dark:bg-[#2D2D2D]">
                                           <tr>
-                                              <th className="px-4 py-4 text-center w-12 font-bold">No</th>
-                                              <th className="px-4 py-4 font-bold">성명</th>
-                                              <th className="px-4 py-4 font-bold">직급</th>
-                                              <th className="px-4 py-4 w-32 font-bold">입사일</th>
-                                              <th className="px-4 py-4 text-center bg-[#EBE5DD] dark:bg-[#444444] font-bold">발생</th>
-                                              <th className="px-4 py-4 text-center bg-[#F5E6E6] dark:bg-[#4A3A3A] text-[#A66E6E] dark:text-[#E68A8A] font-bold">사용</th>
-                                              <th className="px-4 py-4 text-center bg-[#E6F0E6] dark:bg-[#3A4A3E] text-[#6E9675] dark:text-[#8EBE95] font-bold">잔여</th>
-                                              <th className="px-4 py-4 font-bold">비고</th>
-                                              {session && <th className="px-4 py-4 text-center w-16 font-bold">관리</th>}
+                                              <th className="px-2 py-3 text-center w-10 font-bold">No</th>
+                                              <th className="px-2 py-3 font-bold">성명</th>
+                                              <th className="px-2 py-3 font-bold">직급</th>
+                                              <th className="px-2 py-3 w-28 font-bold">입사일</th>
+                                              <th className="px-2 py-3 text-center bg-[#EBE5DD] dark:bg-[#444444] font-bold">발생</th>
+                                              <th className="px-2 py-3 text-center bg-[#F5E6E6] dark:bg-[#4A3A3A] text-[#A66E6E] dark:text-[#E68A8A] font-bold">사용</th>
+                                              <th className="px-2 py-3 text-center bg-[#E6F0E6] dark:bg-[#3A4A3E] text-[#6E9675] dark:text-[#8EBE95] font-bold">잔여</th>
+                                              <th className="px-2 py-3 font-bold min-w-[150px]">비고</th>
+                                              {session && <th className="px-2 py-3 text-center w-12 font-bold">관리</th>}
                                           </tr>
                                       </thead>
                                       <tbody className="divide-y divide-[#F0EAE4] dark:divide-[#333333]">
@@ -622,26 +622,26 @@ export default function DentalLeaveApp() {
                                               
                                               return (
                                                   <tr key={index} className="bg-white dark:bg-[#1E1E1E] hover:bg-[#F9F7F2] dark:hover:bg-[#252525] transition">
-                                                      <td className="px-4 py-3 text-center text-[#A4907C] dark:text-[#C4B09C]">{index + 1}</td>
-                                                      <td className="px-4 py-3">
+                                                      <td className="px-2 py-3 text-center text-[#A4907C] dark:text-[#C4B09C]">{index + 1}</td>
+                                                      <td className="px-2 py-3">
                                                           <input type="text" value={staff.name} 
                                                               onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
                                                               onBlur={handleBlur} 
-                                                              readOnly={!staff.isNew}
-                                                              className={`w-20 bg-transparent outline-none border-b ${staff.isNew ? 'border-[#8D7B68] dark:border-[#A4907C] focus:border-[#8D7B68] cursor-text' : 'border-transparent cursor-default opacity-80'} placeholder-[#DBCCC0]`} 
+                                                              readOnly={!staff.isNew} // 기존 직원은 수정 불가
+                                                              className={`w-16 bg-transparent outline-none border-b ${staff.isNew ? 'border-[#8D7B68] focus:border-[#8D7B68] dark:focus:border-[#A4907C] cursor-text' : 'border-transparent cursor-default opacity-80'} placeholder-[#DBCCC0]`} 
                                                               placeholder="이름" 
                                                           />
                                                       </td>
-                                                      <td className="px-4 py-3">
+                                                      <td className="px-2 py-3">
                                                           <input type="text" value={staff.role} 
                                                               onChange={(e) => handleUpdate(index, 'role', e.target.value)} 
                                                               onBlur={handleBlur} 
                                                               readOnly={!isSessionActive}
-                                                              className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] dark:focus:border-[#A4907C] text-[#8D8D8D] dark:text-[#A0A0A0] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`}
+                                                              className={`w-14 bg-transparent outline-none border-b focus:border-[#8D7B68] dark:focus:border-[#A4907C] text-[#8D8D8D] dark:text-[#A0A0A0] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`}
                                                               placeholder="직급" 
                                                           />
                                                       </td>
-                                                      <td className="px-4 py-3">
+                                                      <td className="px-2 py-3">
                                                           <input type="date" value={staff.date} 
                                                               onChange={(e) => handleUpdate(index, 'date', e.target.value)} 
                                                               onBlur={handleBlur} 
@@ -649,31 +649,31 @@ export default function DentalLeaveApp() {
                                                               className={`w-full bg-transparent outline-none text-[#5C5552] dark:text-[#E0E0E0] ${!isSessionActive ? 'cursor-default' : 'cursor-pointer'}`}
                                                           />
                                                       </td>
-                                                      <td className="px-4 py-3 text-center">
+                                                      <td className="px-2 py-3 text-center">
                                                           <input type="number" value={staff.total} 
                                                               readOnly={true} 
-                                                              className="w-12 text-center rounded py-1 outline-none font-bold bg-transparent border-none text-[#5C5552] dark:text-[#E0E0E0] cursor-default" 
+                                                              className="w-10 text-center rounded py-1 outline-none font-bold bg-transparent border-none text-[#5C5552] dark:text-[#E0E0E0] cursor-default" 
                                                           />
                                                       </td>
-                                                      <td className="px-4 py-3 text-center">
-                                                          <span className="font-bold text-[#A66E6E] dark:text-[#E68A8A] block w-12 text-center mx-auto">{calculatedUsed}</span>
+                                                      <td className="px-2 py-3 text-center">
+                                                          <span className="font-bold text-[#A66E6E] dark:text-[#E68A8A] block w-10 text-center mx-auto">{calculatedUsed}</span>
                                                       </td>
-                                                      <td className="px-4 py-3 text-center">
-                                                          <span className={`font-bold text-lg ${remain <= 0 ? 'text-[#A66E6E] dark:text-[#E68A8A]' : 'text-[#6E9675] dark:text-[#8EBE95]'}`}>{remain}</span>
+                                                      <td className="px-2 py-3 text-center">
+                                                          <span className={`font-bold ${remain <= 0 ? 'text-[#A66E6E] dark:text-[#E68A8A]' : 'text-[#6E9675] dark:text-[#8EBE95]'}`}>{remain}</span>
                                                       </td>
-                                                      <td className="px-4 py-3">
+                                                      <td className="px-2 py-3">
                                                           <input type="text" value={staff.memo} 
                                                               onChange={(e) => handleUpdate(index, 'memo', e.target.value)} 
                                                               onBlur={handleBlur} 
                                                               readOnly={!isSessionActive}
-                                                              className="w-full bg-transparent outline-none text-[#8D8D8D] dark:text-[#A0A0A0]" 
+                                                              className="w-full bg-transparent outline-none text-[#8D8D8D] dark:text-[#A0A0A0] min-w-[150px]" 
                                                               placeholder="메모" 
                                                           />
                                                       </td>
                                                       {session && (
-                                                        <td className="px-4 py-3 text-center">
+                                                        <td className="px-2 py-3 text-center">
                                                             <button onClick={() => deleteStaff(index)} className="text-[#DBCCC0] hover:text-[#A66E6E] p-1 transition">
-                                                                <X className="w-5 h-5"/>
+                                                                <X className="w-4 h-4"/>
                                                             </button>
                                                         </td>
                                                       )}
