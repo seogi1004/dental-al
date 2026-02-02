@@ -165,7 +165,7 @@ export default function DentalLeaveApp() {
   }, [activeTab, fetchSheetData]);
 
   const handleUpdate = (index, field, value) => {
-    if (!session) return; 
+    if (!session?.isAdmin) return; 
 
     const newData = [...staffData];
     newData[index][field] = value;
@@ -192,14 +192,14 @@ export default function DentalLeaveApp() {
   };
 
   const handleBlur = () => {
-    if (!session) return;
+    if (!session?.isAdmin) return;
     if (saveTimeout) clearTimeout(saveTimeout);
     saveSheetData(staffData);
   };
 
   const addStaff = () => {
-    if (!session) {
-      alert("로그인이 필요한 기능입니다.");
+    if (!session?.isAdmin) {
+      alert("관리자 권한이 필요한 기능입니다.");
       return;
     }
     const newItem = {
@@ -218,7 +218,7 @@ export default function DentalLeaveApp() {
   };
 
   const deleteStaff = (index) => {
-    if (!session) return;
+    if (!session?.isAdmin) return;
     if (confirm("정말 삭제하시겠습니까?")) {
       const newData = staffData.filter((_, i) => i !== index);
       setStaffData(newData);
@@ -227,7 +227,10 @@ export default function DentalLeaveApp() {
   };
 
   const handleLeaveClick = async (staffName, originalDate) => {
-    if (!session) return;
+    if (!session?.isAdmin) {
+        alert("관리자만 수정/삭제할 수 있습니다.");
+        return;
+    }
     
     const newValue = prompt("연차 수정/삭제\n\n- 수정: 내용을 변경하세요 (예: 1-15 PM)\n- 삭제: 내용을 모두 지우세요\n- 취소: 취소 버튼 클릭", originalDate);
     
@@ -634,7 +637,7 @@ export default function DentalLeaveApp() {
                                     )}
                                 </p>
                             </div>
-                            {session && (
+                            {session?.isAdmin && (
                               <button onClick={addStaff} className={`${theme.primary} text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md transition`}>
                                   <Plus className="w-4 h-4" /> <span className="hidden md:inline">직원 추가</span><span className="md:hidden">추가</span>
                               </button>
@@ -660,7 +663,7 @@ export default function DentalLeaveApp() {
                                               <th className="px-2 py-3 text-center bg-[#F5E6E6] dark:bg-[#4A3A3A] text-[#A66E6E] dark:text-[#E68A8A] font-bold">사용</th>
                                               <th className="px-2 py-3 text-center bg-[#E6F0E6] dark:bg-[#3A4A3E] text-[#6E9675] dark:text-[#8EBE95] font-bold">잔여</th>
                                               <th className="px-2 py-3 font-bold min-w-[150px]">비고</th>
-                                              {session && <th className="px-2 py-3 text-center w-12 font-bold">관리</th>}
+                                              {session?.isAdmin && <th className="px-2 py-3 text-center w-12 font-bold">관리</th>}
                                           </tr>
                                       </thead>
                                       <tbody className="divide-y divide-[#F0EAE4] dark:divide-[#333333]">
@@ -672,7 +675,7 @@ export default function DentalLeaveApp() {
                                               }, 0) : 0;
                                               
                                               const remain = (parseFloat(staff.total) || 0) - calculatedUsed;
-                                              const isSessionActive = !!session;
+                                              const isSessionActive = !!session?.isAdmin;
                                               
                                               return (
                                                   <tr key={index} className="bg-white dark:bg-[#1E1E1E] hover:bg-[#F9F7F2] dark:hover:bg-[#252525] transition">
@@ -724,7 +727,7 @@ export default function DentalLeaveApp() {
                                                               placeholder="메모" 
                                                           />
                                                       </td>
-                                                      {session && (
+                                                      {session?.isAdmin && (
                                                         <td className="px-2 py-3 text-center">
                                                             <button onClick={() => deleteStaff(index)} className="text-[#DBCCC0] hover:text-[#A66E6E] p-1 transition">
                                                                 <X className="w-4 h-4"/>
@@ -769,7 +772,7 @@ export default function DentalLeaveApp() {
                                                  placeholder="직급"
                                               />
                                            </div>
-                                           {session && (
+                                           {session?.isAdmin && (
                                              <button onClick={() => deleteStaff(index)} className="text-[#DBCCC0] hover:text-[#A66E6E] p-1">
                                                 <Trash2 className="w-4 h-4"/>
                                              </button>
