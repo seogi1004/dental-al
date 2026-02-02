@@ -643,7 +643,7 @@ export default function DentalLeaveApp() {
     return (
       <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-2xl shadow-sm border border-[#F0EAE4] dark:border-[#333333] sticky top-6 h-fit transition-colors duration-300">
         <h3 className="font-bold text-lg mb-4 text-[#5C5552] dark:text-[#E0E0E0] flex items-center gap-2">
-            <span className="bg-[#EBE5DD] dark:bg-[#444444] p-1 rounded">💡</span> 사용 가이드
+            💡 사용 가이드
         </h3>
         
         <div className="space-y-6 text-sm text-[#5C5552] dark:text-[#A0A0A0]">
