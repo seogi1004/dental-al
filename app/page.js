@@ -73,12 +73,13 @@ export default function DentalLeaveApp() {
     const leavesList = [];
     staffData.forEach(staff => {
       if (staff.leaves && Array.isArray(staff.leaves)) {
-        staff.leaves.forEach(rawDateStr => {
+        staff.leaves.forEach(leafObj => {
+          const rawDateStr = leafObj.parsed;
           const { date, type } = parseLeaveDate(rawDateStr);
           const d = new Date(date);
           if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
             leavesList.push({
-              original: rawDateStr,
+              original: leafObj.original,
               date: date,
               type: type,
               dateObj: d,
@@ -99,10 +100,11 @@ export default function DentalLeaveApp() {
     
     staffData.forEach(staff => {
         if (staff.leaves) {
-            staff.leaves.forEach(leaf => {
+            staff.leaves.forEach(leafObj => {
+                const leaf = leafObj.parsed;
                 const { date, type } = parseLeaveDate(leaf);
                 if (date === todayStr) {
-                    list.push({ ...staff, leaveType: type });
+                    list.push({ ...staff, leaveType: type, original: leafObj.original });
                 }
             });
         }
@@ -226,13 +228,29 @@ export default function DentalLeaveApp() {
     }
   };
 
-  const handleLeaveClick = async (staffName, originalDate) => {
+  const handleLeaveClick = async (staffName, originalDate, dateYMD) => {
     if (!session?.isAdmin) {
         alert("관리자만 수정/삭제할 수 있습니다.");
         return;
     }
     
-    const newValue = prompt("연차 수정/삭제\n\n- 수정: 내용을 변경하세요 (예: 1-15 PM)\n- 삭제: 내용을 모두 지우세요\n- 취소: 취소 버튼 클릭", originalDate);
+    // Format for display: 01/15 (User preference)
+    let displayDate = originalDate;
+    try {
+        if (dateYMD) {
+            const d = new Date(dateYMD);
+            if (!isNaN(d.getTime())) {
+                 const mm = String(d.getMonth() + 1).padStart(2, '0');
+                 const dd = String(d.getDate()).padStart(2, '0');
+                 displayDate = `${mm}/${dd}`;
+                 
+                 if (String(originalDate).toUpperCase().includes('AM')) displayDate += ' AM';
+                 else if (String(originalDate).toUpperCase().includes('PM')) displayDate += ' PM';
+            }
+        }
+    } catch(e) {}
+    
+    const newValue = prompt("연차 수정/삭제\n\n- 수정: 내용을 변경하세요 (예: 01/15 AM)\n- 삭제: 내용을 모두 지우세요\n- 취소: 취소 버튼 클릭", displayDate);
     
     if (newValue === null) return;
 
@@ -389,7 +407,7 @@ export default function DentalLeaveApp() {
               
               return (
                 <div key={idx} 
-                     onClick={() => handleLeaveClick(item.name, item.original)}
+                     onClick={() => handleLeaveClick(item.name, item.original, item.date)}
                      className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 cursor-pointer hover:bg-[#F2EBE5] dark:hover:bg-[#252525] active:scale-[0.98] transition-transform ${isPast ? 'bg-[#F5F5F5] dark:bg-[#2A2A2A] opacity-60' : 'bg-[#FDFBF7] dark:bg-[#121212] border border-[#EBE5DD] dark:border-[#444444]'}`}>
                   <div className="flex items-center gap-3">
                     <span className={`text-sm font-bold ${isPast ? 'text-gray-500 dark:text-gray-400' : 'text-[#8D7B68] dark:text-[#A4907C]'}`}>
@@ -436,14 +454,15 @@ export default function DentalLeaveApp() {
       const list = [];
       staffData.forEach(staff => {
         if (staff.leaves) {
-            staff.leaves.forEach(leaf => {
+            staff.leaves.forEach(leafObj => {
+                const leaf = leafObj.parsed;
                 const parsed = parseLeaveDate(leaf);
                 if (parsed.date === dateStr) {
                     list.push({ 
                         name: staff.name, 
                         role: staff.role,
                         type: parsed.type,
-                        original: leaf
+                        original: leafObj.original
                     });
                 }
             });
@@ -500,7 +519,7 @@ export default function DentalLeaveApp() {
                         <div className="mt-6 flex flex-col gap-1 overflow-y-auto max-h-[calc(100%-24px)] custom-scrollbar">
                             {leaves.map((person, idx) => (
                                 <div key={idx} 
-                                     onClick={() => handleLeaveClick(person.name, person.original)}
+                                     onClick={() => handleLeaveClick(person.name, person.original, dateStr)}
                                      className="text-xs bg-[#F2EBE5] dark:bg-[#2D2D2D] text-[#5C5552] dark:text-[#E0E0E0] px-1.5 py-0.5 rounded border border-[#EBE5DD] dark:border-[#444444] truncate flex items-center justify-between cursor-pointer hover:opacity-70 transition-opacity" 
                                      title={`${person.name} (${person.role})`}
                                 >
@@ -721,8 +740,8 @@ export default function DentalLeaveApp() {
                                       <tbody className="divide-y divide-[#F0EAE4] dark:divide-[#333333]">
                                           {staffData.map((staff, index) => {
                                               // Calculate used days from leaves array (0.5 for AM/PM)
-                                              const calculatedUsed = staff.leaves ? staff.leaves.reduce((acc, date) => {
-                                                  const { type } = parseLeaveDate(date);
+                                              const calculatedUsed = staff.leaves ? staff.leaves.reduce((acc, leafObj) => {
+                                                  const { type } = parseLeaveDate(leafObj.parsed);
                                                   return acc + (type === 'FULL' ? 1 : 0.5);
                                               }, 0) : 0;
                                               
@@ -798,8 +817,8 @@ export default function DentalLeaveApp() {
                               {/* ======================= */}
                               <div className="md:hidden space-y-4">
                                 {staffData.map((staff, index) => {
-                                   const calculatedUsed = staff.leaves ? staff.leaves.reduce((acc, date) => {
-                                       const { type } = parseLeaveDate(date);
+                                   const calculatedUsed = staff.leaves ? staff.leaves.reduce((acc, leafObj) => {
+                                       const { type } = parseLeaveDate(leafObj.parsed);
                                        return acc + (type === 'FULL' ? 1 : 0.5);
                                    }, 0) : 0;
                                    const remain = (parseFloat(staff.total) || 0) - calculatedUsed;

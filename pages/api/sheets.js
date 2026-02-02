@@ -172,13 +172,13 @@ export default async function handler(req, res) {
                     let formattedDate = `${currentYear}-${month}-${day}`;
                     if (type) formattedDate += ` (${type})`;
                     
-                    dates.push(formattedDate);
+                    dates.push({ parsed: formattedDate, original: cellValue });
                 } else {
-                    // 파싱 실패 시 원본 유지 (혹시 이미 YYYY-MM-DD 형식이면)
-                     dates.push(cellValue);
+                    // 파싱 실패 시 원본 유지
+                     dates.push({ parsed: cellValue, original: cellValue });
                 }
             } catch (e) {
-                dates.push(cellValue);
+                dates.push({ parsed: cellValue, original: cellValue });
             }
         }
         
