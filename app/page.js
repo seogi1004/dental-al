@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Printer, Plus, RefreshCw, CheckCircle, 
-  Calendar, User, FileText, LogOut, X 
+  Calendar, User, FileText, LogOut, X, LogIn
 } from 'lucide-react';
 
 // ==================================================================================
@@ -22,6 +22,7 @@ const theme = {
 export default function DentalLeaveApp() {
   // ==================================================================================
   // Auth Simulation (미리보기 환경용)
+  // 실제 배포 시에는 next-auth/react의 useSession, signIn, signOut을 사용하세요.
   // ==================================================================================
   const [session, setSession] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
@@ -48,6 +49,7 @@ export default function DentalLeaveApp() {
   };
   // ==================================================================================
 
+  // 기본 탭: 현황표('list')로 고정
   const [activeTab, setActiveTab] = useState('list');
   const [staffData, setStaffData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -59,13 +61,11 @@ export default function DentalLeaveApp() {
   // ==================================================================================
   
   const fetchSheetData = useCallback(async () => {
-    // ★ 수정: 로그인 안 해도 데이터는 불러오도록 변경 (단, API가 공개되어 있거나 데모 데이터 사용)
     setLoading(true);
     try {
       const res = await fetch('/api/sheets'); 
       
       if (!res.ok) {
-        // API가 없거나 권한이 없으면(401) 데모 데이터를 보여줌 (읽기 전용 체험 가능)
         console.warn("API 호출 실패(혹은 권한 없음), 데이터를 로드합니다.");
         const dummyData = [
           { name: "김실장", role: "총괄실장", date: "2020-01-01", total: 17, used: 2, memo: "예시 데이터" },
@@ -83,7 +83,6 @@ export default function DentalLeaveApp() {
       setStatusMsg('동기화 완료');
     } catch (error) {
       console.error("Fetch Error:", error);
-      // 에러 발생 시 UI 확인용 데이터
       setStaffData([
           { name: "김실장", role: "총괄실장", date: "2020-01-01", total: 17, used: 2, memo: "API 연결 필요" },
       ]);
@@ -95,7 +94,7 @@ export default function DentalLeaveApp() {
   }, []);
 
   const saveSheetData = async (newData) => {
-    if (!session) return; // ★ 수정: 저장은 로그인한 사람만 가능
+    if (!session) return; // 로그인 안했으면 저장 불가
 
     setStatusMsg('저장 중...');
     try {
@@ -122,10 +121,10 @@ export default function DentalLeaveApp() {
     if (activeTab === 'list') {
       fetchSheetData();
     }
-  }, [activeTab, fetchSheetData]); // session 의존성 제거 (비로그인 시에도 로드)
+  }, [activeTab, fetchSheetData]);
 
   const handleUpdate = (index, field, value) => {
-    if (!session) return; // ★ 비로그인 시 수정 불가
+    if (!session) return; // 비로그인 시 수정 불가
 
     const newData = [...staffData];
     newData[index][field] = value;
@@ -165,7 +164,7 @@ export default function DentalLeaveApp() {
   };
 
   const addStaff = () => {
-    if (!session) return; // ★ 비로그인 시 추가 불가
+    if (!session) return;
 
     const newItem = {
       name: "", 
@@ -182,7 +181,7 @@ export default function DentalLeaveApp() {
   };
 
   const deleteStaff = (index) => {
-    if (!session) return; // ★ 비로그인 시 삭제 불가
+    if (!session) return;
 
     if (confirm("정말 삭제하시겠습니까? 구글 시트에서도 삭제됩니다.")) {
       const newData = staffData.filter((_, i) => i !== index);
@@ -199,8 +198,6 @@ export default function DentalLeaveApp() {
     return <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] text-[#8D7B68]">로딩 중...</div>;
   }
 
-  // ★ 전체 화면 로그인 차단 코드 제거함. 누구나 화면을 볼 수 있음.
-
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.text} p-4 md:p-8 flex justify-center font-sans`}>
       <div className={`w-full max-w-5xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px]`}>
@@ -213,7 +210,7 @@ export default function DentalLeaveApp() {
             </h1>
             
             <div className="flex gap-3 mt-4 md:mt-0 items-center">
-                {/* 탭 메뉴: 로그인 여부 상관없이 항상 보임 */}
+                {/* 탭 메뉴 (항상 보임) */}
                 <div className="bg-[#7A6A59] p-1.5 rounded-full shadow-inner flex">
                   <button 
                     onClick={() => setActiveTab('list')} 
@@ -229,17 +226,22 @@ export default function DentalLeaveApp() {
                   </button>
                 </div>
                 
-                {/* 로그인/로그아웃 버튼 */}
+                {/* 로그인 상태에 따른 우측 상단 버튼 */}
                 {session ? (
-                  <button onClick={() => signOut()} className="ml-2 text-[#EBE5DD] hover:text-white p-2 rounded-full hover:bg-[#7A6A59] transition" title="로그아웃">
+                  <button 
+                    onClick={() => signOut()} 
+                    className="ml-2 bg-[#7A6A59] hover:bg-[#6B5D4D] text-white p-2.5 rounded-full transition shadow-sm" 
+                    title="로그아웃"
+                  >
                       <LogOut className="w-5 h-5" />
                   </button>
                 ) : (
                   <button 
                     onClick={() => signIn("google")} 
-                    className="flex items-center gap-2 text-[#EBE5DD] hover:text-white text-sm font-bold px-3 py-2 rounded-lg hover:bg-[#7A6A59] transition ml-2"
+                    className="ml-2 bg-[#7A6A59] hover:bg-[#6B5D4D] text-[#EBE5DD] hover:text-white px-4 py-2 rounded-full transition text-sm font-bold flex items-center gap-2 shadow-sm"
+                    title="관리자 로그인"
                   >
-                    <User className="w-4 h-4" /> 관리자
+                    <LogIn className="w-4 h-4" /> 로그인
                   </button>
                 )}
             </div>
@@ -296,9 +298,8 @@ export default function DentalLeaveApp() {
                             <tbody className="divide-y divide-[#F0EAE4]">
                                 {staffData.map((staff, index) => {
                                     const remain = (parseFloat(staff.total) || 0) - (parseFloat(staff.used) || 0);
-                                    // 수정 가능 여부: 로그인 상태 AND (신규 행 OR 기존 행)
-                                    // 여기서는 '로그인 상태'면 기본 필드 수정 가능, '로그인 안됨'이면 전체 불가
-                                    // 연차/사용 필드는 '로그인 됨' + '신규' 일때만 수정 가능하도록 조건 유지
+                                    // 수정 가능 여부: 로그인 상태
+                                    // 단, 연차/사용 필드는 '로그인' + '신규행' 일 때만 수정 가능
                                     const isSessionActive = !!session;
                                     const isNewRow = staff.isNew === true;
                                     
@@ -309,7 +310,7 @@ export default function DentalLeaveApp() {
                                                 <input type="text" value={staff.name} 
                                                     onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
                                                     onBlur={handleBlur} 
-                                                    readOnly={!isSessionActive} // 비로그인 시 읽기 전용
+                                                    readOnly={!isSessionActive}
                                                     className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] placeholder-[#DBCCC0] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`} 
                                                     placeholder="이름" 
                                                 />
@@ -335,7 +336,6 @@ export default function DentalLeaveApp() {
                                                 <input type="number" value={staff.total} 
                                                     onChange={(e) => handleUpdate(index, 'total', e.target.value)} 
                                                     onBlur={handleBlur} 
-                                                    // 발생 연차: 로그인 상태이고 신규 행일 때만 수정 가능
                                                     readOnly={!(isSessionActive && isNewRow)} 
                                                     className={`w-12 text-center rounded py-1 outline-none font-bold transition-colors ${
                                                       (isSessionActive && isNewRow)
@@ -349,7 +349,6 @@ export default function DentalLeaveApp() {
                                                     onChange={(e) => handleUpdate(index, 'used', e.target.value)} 
                                                     onBlur={handleBlur} 
                                                     step="0.5"
-                                                    // 사용 연차: 로그인 상태이고 신규 행일 때만 수정 가능
                                                     readOnly={!(isSessionActive && isNewRow)} 
                                                     className={`w-12 text-center rounded py-1 font-bold outline-none transition-colors ${
                                                       (isSessionActive && isNewRow)
