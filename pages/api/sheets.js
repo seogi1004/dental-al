@@ -103,31 +103,32 @@ export default async function handler(req, res) {
       // CASE 2: 비로그인 유저 -> CSV 파싱 (공개 링크)
       // --------------------------------------------------------
       else {
-        // [중요] 2번째 시트("2026년")의 gid 값을 확인해서 아래 주소를 수정해야 합니다!
-        // 엑셀 웹 주소창에서 'gid=숫자' 부분을 확인하세요.
-        const csvUrlBase = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPph1JA3oxqJG0x78pFA_WxZTmxNsZzecThtyRLavlMiCd-0-ELMTZaIuWAwuP0PJK_b-NhYI5KDPa/pub";
+        // [수정됨] 보내주신 시트 ID (URL 중간에 있는 긴 문자열)
+        const SHEET_ID = "1dmMlb4IxUQO9AZBVSAgS72cXDJqWDLicx-FL0IzH5Eo";
         
-        // 1번 시트 (연차계산) - gid=0 (보통 첫번째 시트)
-        const urlSummary = `${csvUrlBase}?gid=0&single=true&output=csv`;
+        // [수정됨] 보내주신 2026년 시트의 GID
+        const GID_CALENDAR = "191374435"; 
+
+        // 구글 시트 내보내기(Export) 주소 형식 사용
+        const baseUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+
+        // 1번 시트 (연차계산) - gid=0
+        const urlSummary = `${baseUrl}&gid=0`;
         
-        // 2번 시트 (2026년) - gid=??? (직접 확인 필요, 여기선 예시로 123456789라 가정하거나, 첫번째 시트만 읽히는 문제 방지 필요)
-        // 만약 gid를 모르면 비로그인 시에는 달력 데이터가 안 나올 수 있습니다.
-        // 일단 예시로 gid만 바꿔서 요청하는 구조입니다.
-        // *실제 사용 시 아래 gid 값을 "2026년" 시트의 gid로 꼭 바꿔주세요.*
-        const GID_CALENDAR = "191374435"; // <-- [수정 필요] 여기에 2026년 시트의 GID 입력
-        const urlCalendar = `${csvUrlBase}?gid=${GID_CALENDAR}&single=true&output=csv`;
+        // 2번 시트 (2026년) - gid=191374435
+        const urlCalendar = `${baseUrl}&gid=${GID_CALENDAR}`;
 
         const [textSummary, textCalendar] = await Promise.all([
-            fetch(`${urlSummary}&t=${Date.now()}`).then(r => r.ok ? r.text() : ""),
-            fetch(`${urlCalendar}&t=${Date.now()}`).then(r => r.ok ? r.text() : "")
+            fetch(urlSummary).then(r => r.ok ? r.text() : ""),
+            fetch(urlCalendar).then(r => r.ok ? r.text() : "")
         ]);
 
         const parsedSummary = parseCSV(textSummary);
         const parsedCalendar = parseCSV(textCalendar);
 
-        // 헤더 제거 (summary는 1행, calendar는 2행이 헤더이므로 데이터 시작점 조정)
+        // 헤더 제거
         summaryRows = parsedSummary.slice(1); 
-        calendarRows = parsedCalendar.slice(2); // 3행부터 데이터 시작
+        calendarRows = parsedCalendar.slice(2);
       }
 
       // --------------------------------------------------------
