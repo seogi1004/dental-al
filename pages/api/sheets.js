@@ -18,7 +18,7 @@ export default async function handler(req, res) {
 
     const sheets = google.sheets({ version: 'v4', auth });
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-    const range = '2026년!A2:F';
+    const range = '연차계산!A2:F';
 
     if (req.method === 'GET') {
       const response = await sheets.spreadsheets.values.get({ spreadsheetId, range });
@@ -45,12 +45,12 @@ export default async function handler(req, res) {
 
       await sheets.spreadsheets.values.clear({
         spreadsheetId,
-        range: '2026년!A2:F1000'
+        range: '연차계산!A2:F1000'
       });
 
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: '2026년!A2',
+        range: '연차계산!A2',
         valueInputOption: 'USER_ENTERED',
         resource: { values: rows },
       });
