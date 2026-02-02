@@ -135,17 +135,53 @@ export default async function handler(req, res) {
       // 데이터 병합 (Merge)
       // --------------------------------------------------------
       
-      // 1. 달력 데이터 정리 (이름 -> 날짜 배열 맵 생성)
+        // 1. 달력 데이터 정리 (이름 -> 날짜 배열 맵 생성)
       const calendarMap = {};
+      const currentYear = '2026'; // 시트 이름에서 유추하거나 고정
+
       calendarRows.forEach(row => {
         const name = row[0]; // A열: 이름
-        // E열(인덱스 4)부터 끝까지 돌면서 날짜가 있는 셀만 수집
         const dates = [];
+        
+        // E열(인덱스 4)부터 끝까지 돌면서 날짜가 있는 셀만 수집
         for (let i = 4; i < row.length; i++) {
-            if (row[i] && row[i].trim() !== '') {
-                dates.push(row[i].trim());
+            let cellValue = row[i] ? row[i].trim() : '';
+            if (!cellValue) continue;
+
+            // 날짜 파싱 로직 개선 (MM-DD AM/PM -> YYYY-MM-DD (TYPE))
+            // 예: "1-5" -> "2026-01-05"
+            // 예: "1-5 AM" -> "2026-01-05 (AM)"
+            try {
+                // AM/PM 감지
+                let type = '';
+                if (cellValue.toUpperCase().includes('AM')) type = 'AM';
+                else if (cellValue.toUpperCase().includes('PM')) type = 'PM';
+
+                // 날짜 숫자만 추출 (1-5, 01-05, 1/5 등)
+                // 문자와 공백 제거 후 숫자와 구분자(-, /)만 남김
+                let datePart = cellValue.replace(/AM|PM/gi, '').trim();
+                
+                // 구분자 통일
+                datePart = datePart.replace(/\//g, '-');
+                
+                const parts = datePart.split('-');
+                if (parts.length >= 2) {
+                    const month = parts[0].padStart(2, '0');
+                    const day = parts[1].padStart(2, '0');
+                    
+                    let formattedDate = `${currentYear}-${month}-${day}`;
+                    if (type) formattedDate += ` (${type})`;
+                    
+                    dates.push(formattedDate);
+                } else {
+                    // 파싱 실패 시 원본 유지 (혹시 이미 YYYY-MM-DD 형식이면)
+                     dates.push(cellValue);
+                }
+            } catch (e) {
+                dates.push(cellValue);
             }
         }
+        
         if (name) {
             calendarMap[name] = dates;
         }

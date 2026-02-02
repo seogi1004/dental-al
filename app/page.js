@@ -4,24 +4,30 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Printer, Plus, RefreshCw, CheckCircle, 
   Calendar, User, FileText, LogOut, X, LogIn, 
-  Trash2, Clock, CalendarDays, ChevronLeft, ChevronRight
+  Trash2, Clock, CalendarDays, ChevronLeft, ChevronRight,
+  Moon, Sun
 } from 'lucide-react';
 
 import { useSession, signIn, signOut } from "next-auth/react";
+import { useTheme } from "next-themes";
 
 const theme = {
-  bg: "bg-[#FDFBF7]",
-  paper: "bg-white",
-  primary: "bg-[#8D7B68] hover:bg-[#7A6A59]",
-  secondary: "bg-[#EBE5DD] hover:bg-[#DBCCC0] text-[#8D7B68]",
-  text: "text-[#4A4543]",
-  border: "border-[#F0EAE4]",
-  accent: "text-[#A4907C]"
+  bg: "bg-[#FDFBF7] dark:bg-[#121212]",
+  paper: "bg-white dark:bg-[#1E1E1E]",
+  primary: "bg-[#8D7B68] hover:bg-[#7A6A59] dark:bg-[#6D5B4B] dark:hover:bg-[#5C4A3A]",
+  secondary: "bg-[#EBE5DD] hover:bg-[#DBCCC0] text-[#8D7B68] dark:bg-[#2C2C2C] dark:hover:bg-[#3D3D3D] dark:text-[#A4907C]",
+  text: "text-[#4A4543] dark:text-[#E0E0E0]",
+  border: "border-[#F0EAE4] dark:border-[#333333]",
+  accent: "text-[#A4907C] dark:text-[#C4B09C]"
 };
 
 export default function DentalLeaveApp() {
   const { data: session, status } = useSession();
+  const { theme: currentTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const loadingSession = status === "loading";
+
+  useEffect(() => setMounted(true), []);
 
   const [activeTab, setActiveTab] = useState('list');
   const [staffData, setStaffData] = useState([]);
@@ -37,10 +43,25 @@ export default function DentalLeaveApp() {
   // ==================================================================================
   const getTodayString = () => new Date().toISOString().split('T')[0];
   
+  // 날짜 스트링 파싱 (YYYY-MM-DD (TYPE) -> {date, type})
+  const parseLeaveDate = (dateStr) => {
+    if (!dateStr) return { date: '', type: 'FULL' };
+    const match = dateStr.match(/^(\d{4}-\d{2}-\d{2})(?:\s*\((AM|PM)\))?$/);
+    if (match) {
+        return { date: match[1], type: match[2] || 'FULL' };
+    }
+    return { date: dateStr, type: 'FULL' }; // fallback
+  };
+
   const formatDate = (dateStr) => {
-    const d = new Date(dateStr);
+    const { date, type } = parseLeaveDate(dateStr);
+    if (!date || isNaN(new Date(date).getTime())) return dateStr;
+    
+    const d = new Date(date);
     const week = ['일', '월', '화', '수', '목', '금', '토'];
-    return `${d.getMonth() + 1}/${d.getDate()}(${week[d.getDay()]})`;
+    const formatted = `${d.getMonth() + 1}/${d.getDate()}(${week[d.getDay()]})`;
+    
+    return type === 'FULL' ? formatted : `${formatted} ${type}`;
   };
 
   // 이번 달 리스트 (모바일용)
@@ -52,11 +73,14 @@ export default function DentalLeaveApp() {
     const leavesList = [];
     staffData.forEach(staff => {
       if (staff.leaves && Array.isArray(staff.leaves)) {
-        staff.leaves.forEach(dateStr => {
-          const d = new Date(dateStr);
+        staff.leaves.forEach(rawDateStr => {
+          const { date, type } = parseLeaveDate(rawDateStr);
+          const d = new Date(date);
           if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
             leavesList.push({
-              date: dateStr,
+              original: rawDateStr,
+              date: date,
+              type: type,
               dateObj: d,
               name: staff.name,
               role: staff.role
@@ -71,7 +95,19 @@ export default function DentalLeaveApp() {
   // 오늘 휴가자 추출
   const getTodayLeaves = useCallback(() => {
     const todayStr = getTodayString();
-    return staffData.filter(staff => staff.leaves?.includes(todayStr));
+    const list = [];
+    
+    staffData.forEach(staff => {
+        if (staff.leaves) {
+            staff.leaves.forEach(leaf => {
+                const { date, type } = parseLeaveDate(leaf);
+                if (date === todayStr) {
+                    list.push({ ...staff, leaveType: type });
+                }
+            });
+        }
+    });
+    return list;
   }, [staffData]);
 
   // ==================================================================================
@@ -198,15 +234,22 @@ export default function DentalLeaveApp() {
   const TodayStatusCard = () => {
     const todayLeaves = getTodayLeaves();
     return (
-      <div className="bg-[#8D7B68] text-white p-5 rounded-2xl shadow-lg flex items-center justify-between mb-4 h-full">
+      <div className="bg-[#8D7B68] dark:bg-[#5C4A3A] text-white p-5 rounded-2xl shadow-lg flex items-center justify-between mb-4 h-full transition-colors duration-300">
         <div>
           <h3 className="text-sm opacity-90 mb-1 flex items-center gap-1"><Clock className="w-4 h-4"/> 오늘의 현황</h3>
           <p className="text-2xl font-bold">
             {todayLeaves.length > 0 ? `${todayLeaves.length}명 휴가 중` : "전원 출근"}
           </p>
           {todayLeaves.length > 0 && (
-             <div className="text-xs mt-2 opacity-80">
-                {todayLeaves.map(p => p.name).join(', ')}
+             <div className="text-xs mt-2 opacity-80 flex flex-wrap gap-2">
+                {todayLeaves.map((p, i) => (
+                    <span key={i} className="flex items-center gap-1">
+                        {p.name}
+                        {p.leaveType === 'AM' && <span className="bg-white/20 px-1 rounded text-[10px]">AM</span>}
+                        {p.leaveType === 'PM' && <span className="bg-white/20 px-1 rounded text-[10px]">PM</span>}
+                        {i < todayLeaves.length - 1 && <span>,</span>}
+                    </span>
+                ))}
              </div>
           )}
         </div>
@@ -223,31 +266,36 @@ export default function DentalLeaveApp() {
     const todayMonth = new Date().getMonth() + 1;
 
     return (
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#F0EAE4] mb-6">
-        <h3 className="text-[#5C5552] font-bold mb-4 flex items-center gap-2 text-lg">
-          <CalendarDays className="w-5 h-5 text-[#8D7B68]"/> {todayMonth}월 연차 일정
+      <div className="bg-white dark:bg-[#1E1E1E] p-5 rounded-2xl shadow-sm border border-[#F0EAE4] dark:border-[#333333] mb-6 transition-colors duration-300">
+        <h3 className="text-[#5C5552] dark:text-[#E0E0E0] font-bold mb-4 flex items-center gap-2 text-lg">
+          <CalendarDays className="w-5 h-5 text-[#8D7B68] dark:text-[#A4907C]"/> {todayMonth}월 연차 일정
         </h3>
         
         {leaves.length === 0 ? (
-          <div className="text-center py-6 text-[#A4907C] text-sm bg-[#FDFBF7] rounded-xl">
+          <div className="text-center py-6 text-[#A4907C] dark:text-[#8D7B68] text-sm bg-[#FDFBF7] dark:bg-[#121212] rounded-xl transition-colors duration-300">
               이번 달 예정된 연차가 없습니다.
           </div>
         ) : (
           <div className="space-y-3">
             {leaves.map((item, idx) => {
               const isPast = item.date < getTodayString();
+              const badgeColor = item.type === 'AM' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200' : item.type === 'PM' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200' : 'bg-[#EBE5DD] dark:bg-[#2C2C2C] text-[#8D7B68] dark:text-[#A4907C]';
+              
               return (
-                <div key={idx} className={`flex items-center justify-between p-3 rounded-xl ${isPast ? 'bg-[#F5F5F5] opacity-60' : 'bg-[#FDFBF7] border border-[#EBE5DD]'}`}>
+                <div key={idx} className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 ${isPast ? 'bg-[#F5F5F5] dark:bg-[#2A2A2A] opacity-60' : 'bg-[#FDFBF7] dark:bg-[#121212] border border-[#EBE5DD] dark:border-[#444444]'}`}>
                   <div className="flex items-center gap-3">
-                    <span className={`text-sm font-bold ${isPast ? 'text-gray-500' : 'text-[#8D7B68]'}`}>
-                      {formatDate(item.date)}
+                    <span className={`text-sm font-bold ${isPast ? 'text-gray-500 dark:text-gray-400' : 'text-[#8D7B68] dark:text-[#A4907C]'}`}>
+                      {formatDate(item.original)}
                     </span>
-                    <div className="h-4 w-[1px] bg-[#EBE5DD]"></div>
-                    <span className="text-[#5C5552] font-medium">{item.name}</span>
-                    <span className="text-xs text-[#A4907C] bg-white px-1.5 py-0.5 rounded border border-[#EBE5DD]">{item.role}</span>
+                    <div className="h-4 w-[1px] bg-[#EBE5DD] dark:bg-[#444444]"></div>
+                    <span className="text-[#5C5552] dark:text-[#E0E0E0] font-medium">{item.name}</span>
+                    <span className="text-xs text-[#A4907C] dark:text-[#C4B09C] bg-white dark:bg-[#2C2C2C] px-1.5 py-0.5 rounded border border-[#EBE5DD] dark:border-[#444444]">{item.role}</span>
+                    {item.type !== 'FULL' && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${badgeColor}`}>{item.type}</span>
+                    )}
                   </div>
                   {item.date === getTodayString() && (
-                    <span className="text-xs bg-[#8D7B68] text-white px-2 py-1 rounded-full font-bold">Today</span>
+                    <span className="text-xs bg-[#8D7B68] dark:bg-[#5C4A3A] text-white px-2 py-1 rounded-full font-bold">Today</span>
                   )}
                 </div>
               );
@@ -279,8 +327,17 @@ export default function DentalLeaveApp() {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const list = [];
       staffData.forEach(staff => {
-        if (staff.leaves?.includes(dateStr)) {
-          list.push({ name: staff.name, role: staff.role });
+        if (staff.leaves) {
+            staff.leaves.forEach(leaf => {
+                const parsed = parseLeaveDate(leaf);
+                if (parsed.date === dateStr) {
+                    list.push({ 
+                        name: staff.name, 
+                        role: staff.role,
+                        type: parsed.type 
+                    });
+                }
+            });
         }
       });
       return list;
@@ -289,32 +346,32 @@ export default function DentalLeaveApp() {
     const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#F0EAE4] mb-6">
+      <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-2xl shadow-sm border border-[#F0EAE4] dark:border-[#333333] mb-6 transition-colors duration-300">
         {/* 달력 헤더 */}
         <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-[#5C5552] flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-[#8D7B68]"/> 
+            <h3 className="text-xl font-bold text-[#5C5552] dark:text-[#E0E0E0] flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-[#8D7B68] dark:text-[#A4907C]"/> 
                 {year}년 {month + 1}월 일정
             </h3>
             <div className="flex gap-2">
-                <button onClick={() => moveMonth(-1)} className="p-1 hover:bg-[#F2EBE5] rounded-full text-[#8D7B68]"><ChevronLeft /></button>
-                <button onClick={() => setViewDate(new Date())} className="text-sm px-3 py-1 bg-[#F2EBE5] rounded-full text-[#8D7B68] font-bold">오늘</button>
-                <button onClick={() => moveMonth(1)} className="p-1 hover:bg-[#F2EBE5] rounded-full text-[#8D7B68]"><ChevronRight /></button>
+                <button onClick={() => moveMonth(-1)} className="p-1 hover:bg-[#F2EBE5] dark:hover:bg-[#2D2D2D] rounded-full text-[#8D7B68] dark:text-[#A4907C] transition-colors"><ChevronLeft /></button>
+                <button onClick={() => setViewDate(new Date())} className="text-sm px-3 py-1 bg-[#F2EBE5] dark:bg-[#2D2D2D] rounded-full text-[#8D7B68] dark:text-[#A4907C] font-bold transition-colors">오늘</button>
+                <button onClick={() => moveMonth(1)} className="p-1 hover:bg-[#F2EBE5] dark:hover:bg-[#2D2D2D] rounded-full text-[#8D7B68] dark:text-[#A4907C] transition-colors"><ChevronRight /></button>
             </div>
         </div>
 
         {/* 달력 그리드 */}
-        <div className="grid grid-cols-7 border-t border-l border-[#F0EAE4]">
+        <div className="grid grid-cols-7 border-t border-l border-[#F0EAE4] dark:border-[#333333]">
             {/* 요일 헤더 */}
             {weekDays.map((day, i) => (
-                <div key={day} className={`text-center text-xs font-bold py-2 border-r border-b border-[#F0EAE4] bg-[#FDFBF7] ${i===0 ? 'text-red-400' : i===6 ? 'text-blue-400' : 'text-[#8D7B68]'}`}>
+                <div key={day} className={`text-center text-xs font-bold py-2 border-r border-b border-[#F0EAE4] dark:border-[#333333] bg-[#FDFBF7] dark:bg-[#121212] ${i===0 ? 'text-red-400' : i===6 ? 'text-blue-400' : 'text-[#8D7B68] dark:text-[#A4907C]'}`}>
                     {day}
                 </div>
             ))}
 
             {/* 빈 칸 (월 시작 전) */}
             {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                <div key={`empty-${i}`} className="h-24 border-r border-b border-[#F0EAE4] bg-[#FAFAFA]"></div>
+                <div key={`empty-${i}`} className="h-24 border-r border-b border-[#F0EAE4] dark:border-[#333333] bg-[#FAFAFA] dark:bg-[#1A1A1A]"></div>
             ))}
 
             {/* 날짜 셀 */}
@@ -326,15 +383,19 @@ export default function DentalLeaveApp() {
                 const dayOfWeek = dateObj.getDay();
 
                 return (
-                    <div key={day} className={`h-24 border-r border-b border-[#F0EAE4] p-1 relative hover:bg-[#FDFBF7] transition group ${isToday ? 'bg-[#FFF9F0]' : ''}`}>
-                        <span className={`text-sm font-bold absolute top-1 left-2 ${dayOfWeek === 0 ? 'text-red-400' : dayOfWeek === 6 ? 'text-blue-400' : 'text-[#5C5552]'}`}>
-                            {day} {isToday && <span className="text-[10px] bg-[#8D7B68] text-white px-1.5 rounded-full ml-1 align-top">Today</span>}
+                    <div key={day} className={`h-24 border-r border-b border-[#F0EAE4] dark:border-[#333333] p-1 relative hover:bg-[#FDFBF7] dark:hover:bg-[#252525] transition group ${isToday ? 'bg-[#FFF9F0] dark:bg-[#2C241B]' : ''}`}>
+                        <span className={`text-sm font-bold absolute top-1 left-2 ${dayOfWeek === 0 ? 'text-red-400' : dayOfWeek === 6 ? 'text-blue-400' : 'text-[#5C5552] dark:text-[#A0A0A0]'}`}>
+                            {day} {isToday && <span className="text-[10px] bg-[#8D7B68] dark:bg-[#5C4A3A] text-white px-1.5 rounded-full ml-1 align-top">Today</span>}
                         </span>
                         
                         <div className="mt-6 flex flex-col gap-1 overflow-y-auto max-h-[calc(100%-24px)] custom-scrollbar">
                             {leaves.map((person, idx) => (
-                                <div key={idx} className="text-xs bg-[#F2EBE5] text-[#5C5552] px-1.5 py-0.5 rounded border border-[#EBE5DD] truncate" title={`${person.name} (${person.role})`}>
-                                    <strong>{person.name}</strong> <span className="opacity-70 text-[10px]">{person.role}</span>
+                                <div key={idx} className="text-xs bg-[#F2EBE5] dark:bg-[#2D2D2D] text-[#5C5552] dark:text-[#E0E0E0] px-1.5 py-0.5 rounded border border-[#EBE5DD] dark:border-[#444444] truncate flex items-center justify-between" title={`${person.name} (${person.role})`}>
+                                    <div>
+                                        <strong>{person.name}</strong> <span className="opacity-70 text-[10px]">{person.role}</span>
+                                    </div>
+                                    {person.type === 'AM' && <span className="text-[9px] bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200 px-1 rounded ml-1">AM</span>}
+                                    {person.type === 'PM' && <span className="text-[9px] bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200 px-1 rounded ml-1">PM</span>}
                                 </div>
                             ))}
                         </div>
@@ -351,42 +412,49 @@ export default function DentalLeaveApp() {
   // ==================================================================================
 
   if (loadingSession) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] text-[#8D7B68]">로딩 중...</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] dark:bg-[#121212] text-[#8D7B68] dark:text-[#A4907C]">로딩 중...</div>;
   }
 
   return (
-    <div className={`min-h-screen ${theme.bg} ${theme.text} p-4 md:p-8 flex justify-center font-sans`}>
-      <div className={`w-full max-w-6xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px]`}>
+    <div className={`min-h-screen ${theme.bg} ${theme.text} p-4 md:p-8 flex justify-center font-sans transition-colors duration-300`}>
+      <div className={`w-full max-w-6xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px] transition-colors duration-300`}>
         
         {/* 헤더 */}
-        <div className="bg-[#8D7B68] p-6 text-white flex flex-col md:flex-row justify-between items-center shadow-md print:hidden">
+        <div className="bg-[#8D7B68] dark:bg-[#5C4A3A] p-6 text-white flex flex-col md:flex-row justify-between items-center shadow-md print:hidden transition-colors duration-300">
             <h1 className="text-2xl font-bold flex items-center gap-3 tracking-wide">
                 <span className="text-[#FDFBF7]">더데이치과</span> 
                 <span className="text-[#EBE5DD] font-light text-lg opacity-80 hidden md:inline">| 연차 관리 시스템</span>
             </h1>
             
             <div className="flex gap-3 mt-4 md:mt-0 items-center">
-                <div className="bg-[#7A6A59] p-1.5 rounded-full shadow-inner flex">
+                <div className="bg-[#7A6A59] dark:bg-[#4A3B2F] p-1.5 rounded-full shadow-inner flex transition-colors duration-300">
                   <button 
                     onClick={() => setActiveTab('list')} 
-                    className={`px-6 py-2 rounded-full transition-all duration-300 text-sm font-bold flex items-center gap-2 ${activeTab === 'list' ? 'bg-[#FDFBF7] text-[#8D7B68] shadow-sm' : 'text-[#EBE5DD] hover:bg-[#6B5D4D]'}`}
+                    className={`px-6 py-2 rounded-full transition-all duration-300 text-sm font-bold flex items-center gap-2 ${activeTab === 'list' ? 'bg-[#FDFBF7] dark:bg-[#2C2C2C] text-[#8D7B68] dark:text-[#A4907C] shadow-sm' : 'text-[#EBE5DD] hover:bg-[#6B5D4D] dark:hover:bg-[#3D3D3D]'}`}
                   >
                     <Calendar className="w-4 h-4" /> 현황표
                   </button>
                   <button 
                     onClick={() => setActiveTab('form')} 
-                    className={`hidden md:flex px-6 py-2 rounded-full transition-all duration-300 text-sm font-bold items-center gap-2 ${activeTab === 'form' ? 'bg-[#FDFBF7] text-[#8D7B68] shadow-sm' : 'text-[#EBE5DD] hover:bg-[#6B5D4D]'}`}
+                    className={`hidden md:flex px-6 py-2 rounded-full transition-all duration-300 text-sm font-bold items-center gap-2 ${activeTab === 'form' ? 'bg-[#FDFBF7] dark:bg-[#2C2C2C] text-[#8D7B68] dark:text-[#A4907C] shadow-sm' : 'text-[#EBE5DD] hover:bg-[#6B5D4D] dark:hover:bg-[#3D3D3D]'}`}
                   >
                     <FileText className="w-4 h-4" /> 신청서
                   </button>
                 </div>
+
+                <button 
+                  onClick={() => setTheme(currentTheme === 'dark' ? 'light' : 'dark')}
+                  className="ml-2 bg-[#7A6A59] dark:bg-[#4A3B2F] hover:bg-[#6B5D4D] text-[#EBE5DD] hover:text-white p-2.5 rounded-full transition shadow-sm"
+                >
+                  {mounted && currentTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
                 
                 {session ? (
-                  <button onClick={() => signOut()} className="ml-2 bg-[#7A6A59] hover:bg-[#6B5D4D] text-white p-2.5 rounded-full transition shadow-sm" title="로그아웃">
+                  <button onClick={() => signOut()} className="ml-2 bg-[#7A6A59] dark:bg-[#4A3B2F] hover:bg-[#6B5D4D] text-white p-2.5 rounded-full transition shadow-sm" title="로그아웃">
                       <LogOut className="w-5 h-5" />
                   </button>
                 ) : (
-                  <button onClick={() => signIn("google")} className="ml-2 bg-[#7A6A59] hover:bg-[#6B5D4D] text-[#EBE5DD] hover:text-white px-4 py-2 rounded-full transition text-sm font-bold flex items-center gap-2 shadow-sm">
+                  <button onClick={() => signIn("google")} className="ml-2 bg-[#7A6A59] dark:bg-[#4A3B2F] hover:bg-[#6B5D4D] text-[#EBE5DD] hover:text-white px-4 py-2 rounded-full transition text-sm font-bold flex items-center gap-2 shadow-sm">
                     <LogIn className="w-4 h-4" /> 로그인
                   </button>
                 )}
@@ -422,15 +490,15 @@ export default function DentalLeaveApp() {
                 </div>
 
                 {/* 메인 직원 리스트 (공통 - 테이블/카드 변환) */}
-                <div className="bg-white rounded-2xl shadow-sm p-4 md:p-8 border border-[#F0EAE4]">
-                    <div className="flex justify-between items-end mb-6 pb-6 border-b border-[#F0EAE4]">
+                <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl shadow-sm p-4 md:p-8 border border-[#F0EAE4] dark:border-[#333333] transition-colors duration-300">
+                    <div className="flex justify-between items-end mb-6 pb-6 border-b border-[#F0EAE4] dark:border-[#333333]">
                         <div>
-                            <h2 className="text-xl md:text-2xl font-bold text-[#5C5552] flex items-center gap-2">
-                               <User className="w-6 h-6 text-[#A4907C]" /> 
+                            <h2 className="text-xl md:text-2xl font-bold text-[#5C5552] dark:text-[#E0E0E0] flex items-center gap-2">
+                               <User className="w-6 h-6 text-[#A4907C] dark:text-[#C4B09C]" /> 
                                <span className="hidden md:inline">직원 연차 리스트</span>
                                <span className="md:hidden">직원 리스트</span>
                             </h2>
-                            <p className="text-[#A4907C] text-xs md:text-sm mt-2 flex items-center gap-2">
+                            <p className="text-[#A4907C] dark:text-[#C4B09C] text-xs md:text-sm mt-2 flex items-center gap-2">
                                 {statusMsg ? (
                                     <span className="flex items-center gap-1 text-green-600 font-medium"><CheckCircle className="w-4 h-4"/> {statusMsg}</span>
                                 ) : (
@@ -446,41 +514,47 @@ export default function DentalLeaveApp() {
                     </div>
 
                     {loading ? (
-                        <div className="py-20 text-center text-[#8D7B68] animate-pulse">데이터를 불러오는 중입니다...</div>
+                        <div className="py-20 text-center text-[#8D7B68] dark:text-[#A4907C] animate-pulse">데이터를 불러오는 중입니다...</div>
                     ) : (
                         <>
                           {/* ======================= */}
                           {/* 데스크탑 뷰 (테이블) */}
                           {/* ======================= */}
-                          <div className="hidden md:block overflow-x-auto rounded-xl border border-[#F0EAE4]">
-                              <table className="w-full text-sm text-left text-[#5C5552]">
-                                  <thead className="text-xs text-[#8D7B68] uppercase bg-[#F2EBE5]">
+                          <div className="hidden md:block overflow-x-auto rounded-xl border border-[#F0EAE4] dark:border-[#333333]">
+                              <table className="w-full text-sm text-left text-[#5C5552] dark:text-[#E0E0E0]">
+                                  <thead className="text-xs text-[#8D7B68] dark:text-[#A4907C] uppercase bg-[#F2EBE5] dark:bg-[#2D2D2D]">
                                       <tr>
                                           <th className="px-4 py-4 text-center w-12 font-bold">No</th>
                                           <th className="px-4 py-4 font-bold">성명</th>
                                           <th className="px-4 py-4 font-bold">직급</th>
                                           <th className="px-4 py-4 w-32 font-bold">입사일</th>
-                                          <th className="px-4 py-4 text-center bg-[#EBE5DD] font-bold">발생</th>
-                                          <th className="px-4 py-4 text-center bg-[#F5E6E6] text-[#A66E6E] font-bold">사용</th>
-                                          <th className="px-4 py-4 text-center bg-[#E6F0E6] text-[#6E9675] font-bold">잔여</th>
+                                          <th className="px-4 py-4 text-center bg-[#EBE5DD] dark:bg-[#444444] font-bold">발생</th>
+                                          <th className="px-4 py-4 text-center bg-[#F5E6E6] dark:bg-[#4A3A3A] text-[#A66E6E] dark:text-[#E68A8A] font-bold">사용</th>
+                                          <th className="px-4 py-4 text-center bg-[#E6F0E6] dark:bg-[#3A4A3E] text-[#6E9675] dark:text-[#8EBE95] font-bold">잔여</th>
                                           <th className="px-4 py-4 font-bold">비고</th>
                                           {session && <th className="px-4 py-4 text-center w-16 font-bold">관리</th>}
                                       </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-[#F0EAE4]">
+                                  <tbody className="divide-y divide-[#F0EAE4] dark:divide-[#333333]">
                                       {staffData.map((staff, index) => {
-                                          const remain = (parseFloat(staff.total) || 0) - (parseFloat(staff.used) || 0);
+                                          // Calculate used days from leaves array (0.5 for AM/PM)
+                                          const calculatedUsed = staff.leaves ? staff.leaves.reduce((acc, date) => {
+                                              const { type } = parseLeaveDate(date);
+                                              return acc + (type === 'FULL' ? 1 : 0.5);
+                                          }, 0) : 0;
+                                          
+                                          const remain = (parseFloat(staff.total) || 0) - calculatedUsed;
                                           const isSessionActive = !!session;
                                           
                                           return (
-                                              <tr key={index} className="bg-white hover:bg-[#F9F7F2] transition">
-                                                  <td className="px-4 py-3 text-center text-[#A4907C]">{index + 1}</td>
+                                              <tr key={index} className="bg-white dark:bg-[#1E1E1E] hover:bg-[#F9F7F2] dark:hover:bg-[#252525] transition">
+                                                  <td className="px-4 py-3 text-center text-[#A4907C] dark:text-[#C4B09C]">{index + 1}</td>
                                                   <td className="px-4 py-3">
                                                       <input type="text" value={staff.name} 
                                                           onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
                                                           onBlur={handleBlur} 
                                                           readOnly={!isSessionActive}
-                                                          className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] placeholder-[#DBCCC0] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`} 
+                                                          className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] dark:focus:border-[#A4907C] placeholder-[#DBCCC0] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`} 
                                                           placeholder="이름" 
                                                       />
                                                   </td>
@@ -489,7 +563,7 @@ export default function DentalLeaveApp() {
                                                           onChange={(e) => handleUpdate(index, 'role', e.target.value)} 
                                                           onBlur={handleBlur} 
                                                           readOnly={!isSessionActive}
-                                                          className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] text-[#8D8D8D] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`}
+                                                          className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] dark:focus:border-[#A4907C] text-[#8D8D8D] dark:text-[#A0A0A0] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`}
                                                           placeholder="직급" 
                                                       />
                                                   </td>
@@ -498,30 +572,27 @@ export default function DentalLeaveApp() {
                                                           onChange={(e) => handleUpdate(index, 'date', e.target.value)} 
                                                           onBlur={handleBlur} 
                                                           readOnly={!isSessionActive}
-                                                          className={`w-full bg-transparent outline-none text-[#5C5552] ${!isSessionActive ? 'cursor-default' : 'cursor-pointer'}`}
+                                                          className={`w-full bg-transparent outline-none text-[#5C5552] dark:text-[#E0E0E0] ${!isSessionActive ? 'cursor-default' : 'cursor-pointer'}`}
                                                       />
                                                   </td>
                                                   <td className="px-4 py-3 text-center">
                                                       <input type="number" value={staff.total} 
                                                           readOnly={true} 
-                                                          className="w-12 text-center rounded py-1 outline-none font-bold bg-transparent border-none text-[#5C5552] cursor-default" 
+                                                          className="w-12 text-center rounded py-1 outline-none font-bold bg-transparent border-none text-[#5C5552] dark:text-[#E0E0E0] cursor-default" 
                                                       />
                                                   </td>
                                                   <td className="px-4 py-3 text-center">
-                                                      <input type="number" value={staff.used} 
-                                                          readOnly={true}
-                                                          className="w-12 text-center rounded py-1 font-bold outline-none bg-transparent border-none text-[#A66E6E] cursor-default" 
-                                                      />
+                                                      <span className="font-bold text-[#A66E6E] dark:text-[#E68A8A] block w-12 text-center mx-auto">{calculatedUsed}</span>
                                                   </td>
                                                   <td className="px-4 py-3 text-center">
-                                                      <span className={`font-bold text-lg ${remain <= 0 ? 'text-[#A66E6E]' : 'text-[#6E9675]'}`}>{remain}</span>
+                                                      <span className={`font-bold text-lg ${remain <= 0 ? 'text-[#A66E6E] dark:text-[#E68A8A]' : 'text-[#6E9675] dark:text-[#8EBE95]'}`}>{remain}</span>
                                                   </td>
                                                   <td className="px-4 py-3">
                                                       <input type="text" value={staff.memo} 
                                                           onChange={(e) => handleUpdate(index, 'memo', e.target.value)} 
                                                           onBlur={handleBlur} 
                                                           readOnly={!isSessionActive}
-                                                          className="w-full bg-transparent outline-none text-[#8D8D8D]" 
+                                                          className="w-full bg-transparent outline-none text-[#8D8D8D] dark:text-[#A0A0A0]" 
                                                           placeholder="메모" 
                                                       />
                                                   </td>
@@ -544,25 +615,29 @@ export default function DentalLeaveApp() {
                           {/* ======================= */}
                           <div className="md:hidden space-y-4">
                             {staffData.map((staff, index) => {
-                               const remain = (parseFloat(staff.total) || 0) - (parseFloat(staff.used) || 0);
+                               const calculatedUsed = staff.leaves ? staff.leaves.reduce((acc, date) => {
+                                   const { type } = parseLeaveDate(date);
+                                   return acc + (type === 'FULL' ? 1 : 0.5);
+                               }, 0) : 0;
+                               const remain = (parseFloat(staff.total) || 0) - calculatedUsed;
                                const isSessionActive = !!session;
 
                                return (
-                                 <div key={index} className="bg-white p-5 rounded-2xl shadow-sm border border-[#F0EAE4] flex flex-col gap-3 relative">
+                                 <div key={index} className="bg-white dark:bg-[#1E1E1E] p-5 rounded-2xl shadow-sm border border-[#F0EAE4] dark:border-[#333333] flex flex-col gap-3 relative transition-colors duration-300">
                                     <div className="flex justify-between items-start">
                                        <div className="flex items-end gap-2">
                                          <input type="text" value={staff.name} 
                                              onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
                                              onBlur={handleBlur} 
                                              readOnly={!isSessionActive}
-                                             className="text-lg font-bold w-20 bg-transparent outline-none border-b border-[#F0EAE4] focus:border-[#8D7B68] placeholder-[#DBCCC0]"
+                                             className="text-lg font-bold w-20 bg-transparent outline-none border-b border-[#F0EAE4] dark:border-[#333333] focus:border-[#8D7B68] dark:focus:border-[#A4907C] placeholder-[#DBCCC0] text-[#5C5552] dark:text-[#E0E0E0]"
                                              placeholder="이름"
                                           />
                                          <input type="text" value={staff.role} 
                                              onChange={(e) => handleUpdate(index, 'role', e.target.value)} 
                                              onBlur={handleBlur} 
                                              readOnly={!isSessionActive}
-                                             className="text-sm text-[#8D8D8D] w-16 bg-transparent outline-none focus:text-[#5C5552]"
+                                             className="text-sm text-[#8D8D8D] dark:text-[#A0A0A0] w-16 bg-transparent outline-none focus:text-[#5C5552] dark:focus:text-[#E0E0E0]"
                                              placeholder="직급"
                                           />
                                        </div>
@@ -573,37 +648,37 @@ export default function DentalLeaveApp() {
                                        )}
                                     </div>
 
-                                    <div className="flex items-center gap-2 text-sm text-[#8D7B68]">
-                                       <span className="text-xs bg-[#F2EBE5] px-2 py-0.5 rounded text-[#8D7B68]">입사일</span>
+                                    <div className="flex items-center gap-2 text-sm text-[#8D7B68] dark:text-[#A4907C]">
+                                       <span className="text-xs bg-[#F2EBE5] dark:bg-[#2D2D2D] px-2 py-0.5 rounded text-[#8D7B68] dark:text-[#A4907C]">입사일</span>
                                        <input type="date" value={staff.date} 
                                             onChange={(e) => handleUpdate(index, 'date', e.target.value)} 
                                             onBlur={handleBlur} 
                                             readOnly={!isSessionActive}
-                                            className="bg-transparent outline-none text-[#5C5552] text-sm w-32"
+                                            className="bg-transparent outline-none text-[#5C5552] dark:text-[#E0E0E0] text-sm w-32"
                                        />
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-2 mt-2">
-                                       <div className="bg-[#F8F6F4] p-2 rounded-xl text-center">
-                                          <div className="text-xs text-[#8D7B68] mb-1">발생</div>
-                                          <div className="font-bold text-[#5C5552]">{staff.total}</div>
+                                       <div className="bg-[#F8F6F4] dark:bg-[#2A2A2A] p-2 rounded-xl text-center">
+                                          <div className="text-xs text-[#8D7B68] dark:text-[#A4907C] mb-1">발생</div>
+                                          <div className="font-bold text-[#5C5552] dark:text-[#E0E0E0]">{staff.total}</div>
                                        </div>
-                                       <div className="bg-[#FCF5F5] p-2 rounded-xl text-center">
-                                          <div className="text-xs text-[#A66E6E] mb-1">사용</div>
-                                          <div className="font-bold text-[#A66E6E]">{staff.used}</div>
+                                       <div className="bg-[#FCF5F5] dark:bg-[#2E2525] p-2 rounded-xl text-center">
+                                          <div className="text-xs text-[#A66E6E] dark:text-[#E68A8A] mb-1">사용</div>
+                                          <div className="font-bold text-[#A66E6E] dark:text-[#E68A8A]">{calculatedUsed}</div>
                                        </div>
-                                       <div className="bg-[#EEF5EF] p-2 rounded-xl text-center">
-                                          <div className="text-xs text-[#6E9675] mb-1">잔여</div>
-                                          <div className={`font-bold ${remain <= 0 ? 'text-[#A66E6E]' : 'text-[#6E9675]'}`}>{remain}</div>
+                                       <div className="bg-[#EEF5EF] dark:bg-[#252E27] p-2 rounded-xl text-center">
+                                          <div className="text-xs text-[#6E9675] dark:text-[#8EBE95] mb-1">잔여</div>
+                                          <div className={`font-bold ${remain <= 0 ? 'text-[#A66E6E] dark:text-[#E68A8A]' : 'text-[#6E9675] dark:text-[#8EBE95]'}`}>{remain}</div>
                                        </div>
                                     </div>
 
-                                    <div className="mt-2 pt-2 border-t border-[#F0EAE4]">
+                                    <div className="mt-2 pt-2 border-t border-[#F0EAE4] dark:border-[#333333]">
                                       <input type="text" value={staff.memo} 
                                           onChange={(e) => handleUpdate(index, 'memo', e.target.value)} 
                                           onBlur={handleBlur} 
                                           readOnly={!isSessionActive}
-                                          className="w-full text-sm bg-transparent outline-none text-[#8D8D8D] placeholder-gray-300" 
+                                          className="w-full text-sm bg-transparent outline-none text-[#8D8D8D] dark:text-[#A0A0A0] placeholder-gray-300 dark:placeholder-gray-600" 
                                           placeholder="메모를 입력하세요..." 
                                       />
                                     </div>
