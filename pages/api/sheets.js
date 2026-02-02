@@ -5,11 +5,14 @@ import { authOptions } from "./auth/[...nextauth]";
 export default async function handler(req, res) {
   let session = null;
   
+  // ★ 설정: 시트 이름과 GID 확인
+  const SHEET_NAME = '연차계산'; // 로그인 시 사용 (탭 이름)
+  const SHEET_GID = '0';       // 비로그인 시 사용 (주소창의 #gid= 숫자)
+
   try {
     session = await getServerSession(req, res, authOptions);
   } catch (e) {
     console.error("Session Check Error:", e);
-    // 세션 체크 실패해도 GET 요청은 진행하도록 무시
   }
 
   // ============================================================
@@ -29,21 +32,19 @@ export default async function handler(req, res) {
 
       const sheets = google.sheets({ version: 'v4', auth });
       const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-      
-      // ★ 시트 이름 변경: 2026년 -> 연차계산
-      const SHEET_NAME = '연차계산'; 
 
       const newData = req.body;
       const rows = newData.map(item => [
         item.name, item.role, item.date, item.total, item.used, item.memo
       ]);
 
-      // 기존 데이터 지우기 & 새로 쓰기
+      // 1. 기존 데이터 지우기
       await sheets.spreadsheets.values.clear({
         spreadsheetId,
         range: `${SHEET_NAME}!A2:F1000`
       });
 
+      // 2. 새 데이터 쓰기
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range: `${SHEET_NAME}!A2`,
@@ -64,7 +65,7 @@ export default async function handler(req, res) {
   // ============================================================
   if (req.method === 'GET') {
     try {
-      // 1. 로그인이 되어 있다면 -> Google API 사용 (가장 안정적)
+      // 1. 로그인이 되어 있다면 -> Google API 사용
       if (session) {
         const auth = new google.auth.OAuth2(
           process.env.GOOGLE_CLIENT_ID,
@@ -74,9 +75,6 @@ export default async function handler(req, res) {
 
         const sheets = google.sheets({ version: 'v4', auth });
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-        
-        // ★ 시트 이름 변경: 2026년 -> 연차계산
-        const SHEET_NAME = '연차계산';
 
         const response = await sheets.spreadsheets.values.get({
           spreadsheetId,
@@ -89,20 +87,30 @@ export default async function handler(req, res) {
         return res.status(200).json(mapRowsToData(rows));
       } 
       
-      // 2. 로그인이 안 되어 있다면 -> CSV Fetch (공개 시트 읽기)
+      // 2. 로그인이 안 되어 있다면 -> [웹에 게시]된 CSV 읽기
       else {
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-        // gid=0은 첫번째 탭을 의미합니다. '연차계산' 시트가 첫 번째에 있어야 합니다.
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=0`;
         
-        const response = await fetch(csvUrl);
+        // ★ 'pub' 방식으로 변경: [파일] > [공유] > [웹에 게시] 설정이 필수입니다.
+        // 이 방식이 Vercel 서버에서 데이터를 읽어오는 가장 확실한 방법입니다.
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/pub?gid=${SHEET_GID}&single=true&output=csv`;
+        
+        // 캐시 방지를 위해 타임스탬프 추가
+        const response = await fetch(`${csvUrl}&t=${Date.now()}`);
         
         if (!response.ok) {
-          console.error("CSV Fetch Failed:", response.status);
+          console.error(`CSV Fetch Failed (${response.status}). 구글 시트에서 [웹에 게시]를 했는지 확인하세요.`);
           return res.status(200).json([]);
         }
 
         const csvText = await response.text();
+        
+        // 여전히 로그인 페이지가 반환된다면 웹 게시에 실패한 것임
+        if (csvText.includes("<!DOCTYPE html") || csvText.includes("google.com/accounts")) {
+           console.error("Error: 구글 로그인 페이지가 반환됨. [웹에 게시]가 필요합니다.");
+           return res.status(200).json([]);
+        }
+
         const rows = parseCSV(csvText);
 
         if (rows.length <= 1) return res.status(200).json([]);
@@ -117,19 +125,18 @@ export default async function handler(req, res) {
   }
 }
 
-// 헬퍼 함수: 행 데이터를 객체로 변환
+// 헬퍼 함수
 function mapRowsToData(rows) {
   return rows.map(row => ({
-    name: row[0] || '',   // A열
-    role: row[1] || '',   // B열
-    date: row[2] || '',   // C열
-    total: row[3] || 0,   // D열
-    used: row[4] || 0,    // E열
-    memo: row[5] || ''    // F열
+    name: row[0] || '',
+    role: row[1] || '',
+    date: row[2] || '',
+    total: row[3] || 0,
+    used: row[4] || 0,
+    memo: row[5] || ''
   }));
 }
 
-// 헬퍼 함수: 간단한 CSV 파서
 function parseCSV(text) {
   const rows = [];
   let currentRow = [];
