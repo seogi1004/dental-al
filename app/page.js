@@ -1,45 +1,99 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Printer, Plus, Save, RefreshCw, AlertCircle, CheckCircle, 
-  Calendar, User, FileText, ChevronRight 
+  Calendar, User, FileText, ChevronRight, LogOut 
 } from 'lucide-react';
-import { useSession, signIn, signOut } from "next-auth/react";
 
+// ==================================================================================
+// 1. 디자인 테마 설정 (따뜻한 병원 분위기)
+// ==================================================================================
 const theme = {
-  bg: "bg-[#FDFBF7]",
-  paper: "bg-white",
-  primary: "bg-[#8D7B68] hover:bg-[#7A6A59]",
-  secondary: "bg-[#EBE5DD] hover:bg-[#DBCCC0] text-[#8D7B68]",
-  text: "text-[#4A4543]",
-  border: "border-[#F0EAE4]",
-  accent: "text-[#A4907C]"
+  bg: "bg-[#FDFBF7]",         // 전체 배경: 크림 아이보리
+  paper: "bg-white",          // 카드/종이 배경
+  primary: "bg-[#8D7B68] hover:bg-[#7A6A59]", // 버튼: 웜브라운
+  secondary: "bg-[#EBE5DD] hover:bg-[#DBCCC0] text-[#8D7B68]", // 서브 버튼
+  text: "text-[#4A4543]",     // 본문 텍스트: 웜그레이
+  border: "border-[#F0EAE4]", // 테두리: 연한 베이지
+  accent: "text-[#A4907C]"    // 강조 텍스트
 };
 
 export default function DentalLeaveApp() {
-  const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState('form');
+  // ==================================================================================
+  // Auth Simulation (미리보기 환경용)
+  // 실제 배포 시에는 next-auth/react의 useSession, signIn, signOut을 사용하세요.
+  // ==================================================================================
+  const [session, setSession] = useState(null);
+  const [loadingSession, setLoadingSession] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingSession(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const signIn = (provider) => {
+    setSession({
+      user: {
+        name: "더데이치과 관리자",
+        email: "admin@theday.com",
+        image: null
+      }
+    });
+  };
+
+  const signOut = () => {
+    setSession(null);
+  };
+  // ==================================================================================
+
+  const [activeTab, setActiveTab] = useState('list');
   const [staffData, setStaffData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
+  const [saveTimeout, setSaveTimeout] = useState(null);
 
-  const fetchSheetData = async () => {
+  // ==================================================================================
+  // 2. API 통신 함수 (GET / POST)
+  // ==================================================================================
+  
+  // 데이터 불러오기
+  const fetchSheetData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/sheets'); 
+      
+      if (!res.ok) {
+        console.warn("API 호출 실패, 더미 데이터를 로드합니다.");
+        const dummyData = [
+          { name: "김실장", role: "총괄실장", date: "2020-01-01", total: 17, used: 2, memo: "예시 데이터" },
+          { name: "이팀장", role: "진료팀장", date: "2021-03-15", total: 16, used: 5, memo: "" }
+        ];
+        setStaffData(dummyData);
+        setStatusMsg('동기화 완료 (예시)');
+        return;
+      }
+
       const data = await res.json();
       if (data.error) throw new Error(data.error);
+      
       setStaffData(data.length > 0 ? data : []);
-      setStatusMsg('데이터 동기화 완료');
+      setStatusMsg('동기화 완료');
     } catch (error) {
       console.error("Fetch Error:", error);
-      setStatusMsg('동기화 실패: ' + error.message);
+      setStaffData([
+          { name: "김실장", role: "총괄실장", date: "2020-01-01", total: 17, used: 2, memo: "API 연결 필요" },
+      ]);
+      setStatusMsg('데이터 로드 실패 (데모 모드)');
     } finally {
       setLoading(false);
       setTimeout(() => setStatusMsg(''), 3000);
     }
-  };
+  }, []);
 
+  // 데이터 저장하기
   const saveSheetData = async (newData) => {
     setStatusMsg('저장 중...');
     try {
@@ -48,47 +102,84 @@ export default function DentalLeaveApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newData || staffData),
       });
+      
       if (!res.ok) throw new Error('Failed to save');
-      setStatusMsg('구글 시트에 저장됨');
+      setStatusMsg('저장됨');
+      setTimeout(() => setStatusMsg(''), 2000);
     } catch (error) {
-      setStatusMsg('저장 실패');
+      console.error("Save Error:", error);
+      setStatusMsg('저장 실패 (데모 모드)');
     }
   };
 
+  // ==================================================================================
+  // 3. 이벤트 핸들러
+  // ==================================================================================
+
+  // 탭 변경 시 데이터 로드
   useEffect(() => {
     if (activeTab === 'list' && session) {
       fetchSheetData();
     }
-  }, [activeTab, session]);
+  }, [activeTab, session, fetchSheetData]);
 
+  // 입력 값 변경 핸들러
   const handleUpdate = (index, field, value) => {
     const newData = [...staffData];
     newData[index][field] = value;
+    
+    // 날짜 변경 시 연차 자동 계산 로직 (기존 직원이더라도 날짜가 바뀌면 자동 계산됨)
     if (field === 'date' && value) {
       const joinDate = new Date(value);
       const today = new Date();
       let years = today.getFullYear() - joinDate.getFullYear();
       const m = today.getMonth() - joinDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < joinDate.getDate())) years--;
-      let leave = years < 1 ? 11 : 15 + Math.floor((years - 1) / 2);
-      if (leave > 25) leave = 25;
+      if (m < 0 || (m === 0 && today.getDate() < joinDate.getDate())) {
+        years--;
+      }
+
+      let leave = 0;
+      if (years < 1) {
+        leave = 11; 
+      } else {
+        leave = 15 + Math.floor((years - 1) / 2);
+        if (leave > 25) leave = 25;
+      }
       newData[index].total = leave;
     }
+
     setStaffData(newData);
+
+    if (saveTimeout) clearTimeout(saveTimeout);
+    const timeoutId = setTimeout(() => {
+      saveSheetData(newData);
+    }, 1000);
+    setSaveTimeout(timeoutId);
   };
 
-  const handleBlur = () => { saveSheetData(); };
+  // 포커스 아웃 시 즉시 저장
+  const handleBlur = () => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveSheetData(staffData);
+  };
 
+  // 직원 추가
   const addStaff = () => {
     const newItem = {
-      name: "", role: "직원", date: new Date().toISOString().split('T')[0],
-      total: 11, used: 0, memo: ""
+      name: "", 
+      role: "직원", 
+      date: new Date().toISOString().split('T')[0],
+      total: 11, 
+      used: 0, 
+      memo: "",
+      isNew: true // ★ 신규 추가된 항목임을 표시 (수정 가능하게 처리)
     };
     const newData = [...staffData, newItem];
     setStaffData(newData);
     saveSheetData(newData);
   };
 
+  // 직원 삭제
   const deleteStaff = (index) => {
     if (confirm("정말 삭제하시겠습니까? 구글 시트에서도 삭제됩니다.")) {
       const newData = staffData.filter((_, i) => i !== index);
@@ -97,37 +188,195 @@ export default function DentalLeaveApp() {
     }
   };
 
+  // ==================================================================================
+  // 4. 렌더링
+  // ==================================================================================
+
+  if (loadingSession) {
+    return <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] text-[#8D7B68]">로딩 중...</div>;
+  }
+
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
-        <button onClick={() => signIn("google")} className="bg-[#8D7B68] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-[#7A6A59] transition">
-          구글 계정으로 로그인 (더데이치과)
-        </button>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-4">
+        <div className="bg-white p-10 rounded-3xl shadow-xl border border-[#F0EAE4] text-center max-w-md w-full">
+          <div className="w-16 h-16 bg-[#8D7B68] rounded-full flex items-center justify-center mx-auto mb-6">
+             <User className="text-white w-8 h-8" />
+          </div>
+          <h1 className="text-2xl font-bold text-[#4A4543] mb-2">더데이치과</h1>
+          <p className="text-[#A4907C] mb-8">연차 관리 시스템에 오신 것을 환영합니다.</p>
+          <button 
+            onClick={() => signIn("google")} 
+            className="w-full bg-[#8D7B68] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-[#7A6A59] transition flex items-center justify-center gap-2"
+          >
+            <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+              <span className="text-[#8D7B68] font-bold text-xs">G</span>
+            </div>
+            구글 계정으로 로그인
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.text} p-4 md:p-8 flex justify-center font-sans`}>
-      <div className={`w-full max-w-5xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[800px]`}>
-        <div className="bg-[#8D7B68] p-6 text-white flex flex-col md:flex-row justify-between items-center shadow-md">
+      <div className={`w-full max-w-5xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px]`}>
+        
+        {/* 헤더 영역 */}
+        <div className="bg-[#8D7B68] p-6 text-white flex flex-col md:flex-row justify-between items-center shadow-md print:hidden">
             <h1 className="text-2xl font-bold flex items-center gap-3 tracking-wide">
                 <span className="text-[#FDFBF7]">더데이치과</span> 
                 <span className="text-[#EBE5DD] font-light text-lg opacity-80">| 연차 관리 시스템</span>
             </h1>
+            
             <div className="flex gap-3 mt-4 md:mt-0 items-center">
+                {/* 탭 메뉴 */}
                 <div className="bg-[#7A6A59] p-1.5 rounded-full shadow-inner flex">
-                  <button onClick={() => setActiveTab('form')} className={`px-6 py-2 rounded-full transition-all duration-300 text-sm font-bold flex items-center gap-2 ${activeTab === 'form' ? 'bg-[#FDFBF7] text-[#8D7B68] shadow-sm' : 'text-[#EBE5DD] hover:bg-[#6B5D4D]'}`}>
-                    <FileText className="w-4 h-4" /> 신청서
-                  </button>
-                  <button onClick={() => setActiveTab('list')} className={`px-6 py-2 rounded-full transition-all duration-300 text-sm font-bold flex items-center gap-2 ${activeTab === 'list' ? 'bg-[#FDFBF7] text-[#8D7B68] shadow-sm' : 'text-[#EBE5DD] hover:bg-[#6B5D4D]'}`}>
+                  <button 
+                    onClick={() => setActiveTab('list')} 
+                    className={`px-6 py-2 rounded-full transition-all duration-300 text-sm font-bold flex items-center gap-2 ${activeTab === 'list' ? 'bg-[#FDFBF7] text-[#8D7B68] shadow-sm' : 'text-[#EBE5DD] hover:bg-[#6B5D4D]'}`}
+                  >
                     <Calendar className="w-4 h-4" /> 현황표
                   </button>
+                  <button 
+                    onClick={() => setActiveTab('form')} 
+                    className={`px-6 py-2 rounded-full transition-all duration-300 text-sm font-bold flex items-center gap-2 ${activeTab === 'form' ? 'bg-[#FDFBF7] text-[#8D7B68] shadow-sm' : 'text-[#EBE5DD] hover:bg-[#6B5D4D]'}`}
+                  >
+                    <FileText className="w-4 h-4" /> 신청서
+                  </button>
                 </div>
-                <button onClick={() => signOut()} className="text-sm text-[#EBE5DD] underline ml-2 hover:text-white">로그아웃</button>
+                
+                {/* 로그아웃 */}
+                <button onClick={() => signOut()} className="ml-2 text-[#EBE5DD] hover:text-white p-2 rounded-full hover:bg-[#7A6A59] transition" title="로그아웃">
+                    <LogOut className="w-5 h-5" />
+                </button>
             </div>
         </div>
 
+        {/* -------------------------------------------------------------------------- */}
+        {/* 탭 1: 연차 현황표 (데이터 관리) - 기본 탭 */}
+        {/* -------------------------------------------------------------------------- */}
+        {activeTab === 'list' && (
+          <div className="p-8 bg-[#FDFBF7] h-full">
+            <div className="bg-white rounded-2xl shadow-sm p-8 border border-[#F0EAE4]">
+                <div className="flex justify-between items-end mb-6 pb-6 border-b border-[#F0EAE4]">
+                    <div>
+                        <h2 className="text-2xl font-bold text-[#5C5552] flex items-center gap-2">
+                           <User className="w-6 h-6 text-[#A4907C]" /> 직원 연차 현황 (2026년)
+                        </h2>
+                        <p className="text-[#A4907C] text-sm mt-2 flex items-center gap-2">
+                            {statusMsg ? (
+                                <span className="flex items-center gap-1 text-green-600 font-medium"><CheckCircle className="w-4 h-4"/> {statusMsg}</span>
+                            ) : (
+                                <span className="flex items-center gap-1"><RefreshCw className="w-4 h-4"/> 구글 시트와 자동 동기화됩니다.</span>
+                            )}
+                        </p>
+                    </div>
+                    <button onClick={addStaff} className={`${theme.primary} text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md transition`}>
+                        <Plus className="w-4 h-4" /> 직원 추가
+                    </button>
+                </div>
+
+                {loading ? (
+                    <div className="py-20 text-center text-[#8D7B68] animate-pulse">
+                         데이터를 불러오는 중입니다...
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto rounded-xl border border-[#F0EAE4]">
+                        <table className="w-full text-sm text-left text-[#5C5552]">
+                            <thead className="text-xs text-[#8D7B68] uppercase bg-[#F2EBE5]">
+                                <tr>
+                                    <th className="px-4 py-4 text-center w-12 font-bold">No</th>
+                                    <th className="px-4 py-4 font-bold">성명</th>
+                                    <th className="px-4 py-4 font-bold">직급</th>
+                                    <th className="px-4 py-4 w-32 font-bold">입사일</th>
+                                    <th className="px-4 py-4 text-center bg-[#EBE5DD] font-bold">발생</th>
+                                    <th className="px-4 py-4 text-center bg-[#F5E6E6] text-[#A66E6E] font-bold">사용</th>
+                                    <th className="px-4 py-4 text-center bg-[#E6F0E6] text-[#6E9675] font-bold">잔여</th>
+                                    <th className="px-4 py-4 font-bold">비고</th>
+                                    <th className="px-4 py-4 text-center w-16">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#F0EAE4]">
+                                {staffData.map((staff, index) => {
+                                    const remain = (parseFloat(staff.total) || 0) - (parseFloat(staff.used) || 0);
+                                    // isNew 속성이 있는 경우(방금 추가됨)에만 수정 가능, 그 외에는 읽기 전용
+                                    const isEditable = staff.isNew === true;
+                                    
+                                    return (
+                                        <tr key={index} className="bg-white hover:bg-[#F9F7F2] transition">
+                                            <td className="px-4 py-3 text-center text-[#A4907C]">{index + 1}</td>
+                                            <td className="px-4 py-3">
+                                                <input type="text" value={staff.name} 
+                                                    onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
+                                                    onBlur={handleBlur} 
+                                                    className="w-20 bg-transparent outline-none border-b border-transparent focus:border-[#8D7B68] placeholder-[#DBCCC0]" 
+                                                    placeholder="이름" 
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <input type="text" value={staff.role} 
+                                                    onChange={(e) => handleUpdate(index, 'role', e.target.value)} 
+                                                    onBlur={handleBlur} 
+                                                    className="w-20 bg-transparent outline-none border-b border-transparent focus:border-[#8D7B68] text-[#8D8D8D]" 
+                                                    placeholder="직급" 
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <input type="date" value={staff.date} 
+                                                    onChange={(e) => handleUpdate(index, 'date', e.target.value)} 
+                                                    onBlur={handleBlur} 
+                                                    className="w-full bg-transparent outline-none cursor-pointer text-[#5C5552]" 
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <input type="number" value={staff.total} 
+                                                    onChange={(e) => handleUpdate(index, 'total', e.target.value)} 
+                                                    onBlur={handleBlur} 
+                                                    readOnly={!isEditable} // ★ 수정: 기존 데이터는 수정 불가
+                                                    className={`w-12 text-center rounded py-1 outline-none font-bold ${isEditable ? 'bg-white border border-[#EBE5DD]' : 'bg-[#EBE5DD] cursor-default'}`} 
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <input type="number" value={staff.used} 
+                                                    onChange={(e) => handleUpdate(index, 'used', e.target.value)} 
+                                                    onBlur={handleBlur} 
+                                                    step="0.5"
+                                                    readOnly={!isEditable} // ★ 수정: 기존 데이터는 수정 불가
+                                                    className={`w-12 text-center rounded py-1 font-bold outline-none ${isEditable ? 'bg-white border border-[#F5E6E6] text-[#A66E6E]' : 'bg-[#F5E6E6] text-[#A66E6E] cursor-default'}`} 
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className={`font-bold text-lg ${remain <= 0 ? 'text-[#A66E6E]' : 'text-[#6E9675]'}`}>{remain}</span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <input type="text" value={staff.memo} 
+                                                    onChange={(e) => handleUpdate(index, 'memo', e.target.value)} 
+                                                    onBlur={handleBlur} 
+                                                    className="w-full bg-transparent outline-none text-[#8D8D8D]" 
+                                                    placeholder="메모" 
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <button onClick={() => deleteStaff(index)} className="text-[#DBCCC0] hover:text-[#A66E6E] p-1 transition" title="삭제">
+                                                    <AlertCircle className="w-5 h-5"/>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+          </div>
+        )}
+
+        {/* -------------------------------------------------------------------------- */}
+        {/* 탭 2: 연차 신청서 (A4 인쇄용) */}
+        {/* -------------------------------------------------------------------------- */}
         {activeTab === 'form' && (
           <div className="p-8 bg-[#FDFBF7] flex flex-col items-center">
              <div className="w-full flex justify-end mb-6 print:hidden">
@@ -135,8 +384,12 @@ export default function DentalLeaveApp() {
                     <Printer className="w-4 h-4" /> 인쇄하기
                 </button>
             </div>
-            <div className="bg-white p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] relative rounded-sm print:shadow-none print:w-full">
+
+            {/* A4 용지 스타일 컨테이너 */}
+            <div className="bg-white p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] relative rounded-sm print:shadow-none print:w-full print:m-0">
                 <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 tracking-widest text-[#222] font-serif">연차(휴가) 신청서</h2>
+                
+                {/* 결재란 */}
                 <div className="flex justify-end mb-8">
                     <table className="border border-gray-800 text-center text-sm w-64">
                         <tbody>
@@ -147,16 +400,20 @@ export default function DentalLeaveApp() {
                             <td className="border border-gray-800 py-1">원 장</td>
                         </tr>
                         <tr>
-                            <td className="border border-gray-800 h-16"></td><td className="border border-gray-800 h-16"></td><td className="border border-gray-800 h-16"></td>
+                            <td className="border border-gray-800 h-16"></td>
+                            <td className="border border-gray-800 h-16"></td>
+                            <td className="border border-gray-800 h-16"></td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
+
+                {/* 입력 폼 */}
                 <table className="w-full border-collapse border border-gray-800 mb-6 text-sm">
                     <tbody>
                     <tr>
                         <th className="border border-gray-800 bg-gray-50 p-3 w-28 font-bold text-gray-800">성 명</th>
-                        <td className="border border-gray-800 p-2"><input type="text" className="w-full p-1 outline-none" placeholder="이름" /></td>
+                        <td className="border border-gray-800 p-2"><input type="text" className="w-full p-1 outline-none font-medium" placeholder="이름 입력" /></td>
                         <th className="border border-gray-800 bg-gray-50 p-3 w-28 font-bold text-gray-800">소 속</th>
                         <td className="border border-gray-800 p-2">
                             <select className="w-full p-1 outline-none bg-transparent appearance-none">
@@ -164,15 +421,49 @@ export default function DentalLeaveApp() {
                             </select>
                         </td>
                     </tr>
-                    <tr><th className="border border-gray-800 bg-gray-50 p-3 font-bold text-gray-800">비상연락</th><td colSpan="3" className="border border-gray-800 p-2"><input type="text" className="w-full p-1 outline-none" placeholder="010-0000-0000" /></td></tr>
-                    <tr><th className="border border-gray-800 bg-gray-50 p-3 font-bold text-gray-800">종 류</th><td colSpan="3" className="border border-gray-800 p-3"><div className="flex gap-6">{['연차', '반차', '병가', '경조사', '기타'].map(type => (<label key={type} className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="w-4 h-4 accent-gray-600" /> {type}</label>))}</div></td></tr>
-                    <tr><th className="border border-gray-800 bg-gray-50 p-3 font-bold text-gray-800">기 간</th><td colSpan="3" className="border border-gray-800 p-3"><div className="flex items-center gap-2 mb-2"><input type="date" className="border px-2 py-1 rounded" /> ~ <input type="date" className="border px-2 py-1 rounded" /><span className="ml-4">( 총 <input type="text" className="w-10 text-center border-b border-gray-800 outline-none" /> 일간 )</span></div><div className="text-xs text-gray-500 mt-1">※ 반차 시간: <input type="time" className="border px-1 rounded"/> ~ <input type="time" className="border px-1 rounded"/></div></td></tr>
-                    <tr><th className="border border-gray-800 bg-gray-50 p-3 font-bold text-gray-800">사 유</th><td colSpan="3" className="border border-gray-800 p-3 h-32 align-top"><textarea className="w-full h-full p-1 outline-none resize-none" placeholder="사유를 기재해 주세요"></textarea></td></tr>
-                    <tr><th className="border border-gray-800 bg-gray-50 p-3 font-bold text-gray-800">인수인계</th><td colSpan="3" className="border border-gray-800 p-3 h-32 align-top"><textarea className="w-full h-full p-1 outline-none resize-none" placeholder="1. 예약 변경 건: &#13;&#10;2. 전달 사항:"></textarea></td></tr>
+                    <tr>
+                        <th className="border border-gray-800 bg-gray-50 p-3 font-bold text-gray-800">비상연락</th>
+                        <td colSpan="3" className="border border-gray-800 p-2"><input type="text" className="w-full p-1 outline-none" placeholder="010-0000-0000" /></td>
+                    </tr>
+                    <tr>
+                        <th className="border border-gray-800 bg-gray-50 p-3 font-bold text-gray-800">종 류</th>
+                        <td colSpan="3" className="border border-gray-800 p-3">
+                            <div className="flex gap-6">
+                                {['연차', '반차', '병가', '경조사', '기타'].map(type => (
+                                    <label key={type} className="flex items-center gap-1 cursor-pointer">
+                                        <input type="checkbox" className="w-4 h-4 accent-gray-600" /> {type}
+                                    </label>
+                                ))}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th className="border border-gray-800 bg-gray-50 p-3 font-bold text-gray-800">기 간</th>
+                        <td colSpan="3" className="border border-gray-800 p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                                <input type="date" className="border px-2 py-1 rounded border-gray-300" /> ~ <input type="date" className="border px-2 py-1 rounded border-gray-300" />
+                                <span className="ml-4">( 총 <input type="text" className="w-10 text-center border-b border-gray-800 outline-none" /> 일간 )</span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">※ 반차 시간: <input type="time" className="border px-1 rounded"/> ~ <input type="time" className="border px-1 rounded"/></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th className="border border-gray-800 bg-gray-50 p-3 font-bold text-gray-800">사 유</th>
+                        <td colSpan="3" className="border border-gray-800 p-3 h-32 align-top">
+                            <textarea className="w-full h-full p-1 outline-none resize-none" placeholder="사유를 기재해 주세요"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th className="border border-gray-800 bg-gray-50 p-3 font-bold text-gray-800">인수인계</th>
+                        <td colSpan="3" className="border border-gray-800 p-3 h-32 align-top">
+                            <textarea className="w-full h-full p-1 outline-none resize-none" placeholder="1. 예약 변경 건: &#13;&#10;2. 전달 사항:"></textarea>
+                        </td>
+                    </tr>
                     </tbody>
                 </table>
+                
                 <div className="text-center mt-16">
-                    <p className="text-lg mb-8 font-medium font-serif text-gray-800">2024년 &nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;일</p>
+                    <p className="text-lg mb-8 font-medium font-serif text-gray-800">2026년 &nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;일</p>
                     <div className="flex justify-center items-center gap-4 mb-16">
                         <span className="text-lg font-bold font-serif text-gray-800">신 청 인 :</span>
                         <input type="text" className="text-xl text-center border-b border-gray-800 w-32 outline-none font-serif" />
@@ -184,54 +475,6 @@ export default function DentalLeaveApp() {
           </div>
         )}
 
-        {activeTab === 'list' && (
-          <div className="p-8 bg-[#FDFBF7] h-full">
-            <div className="bg-white rounded-2xl shadow-sm p-8 border border-[#F0EAE4]">
-                <div className="flex justify-between items-end mb-6 pb-6 border-b border-[#F0EAE4]">
-                    <div>
-                        <h2 className="text-2xl font-bold text-[#5C5552] flex items-center gap-2">
-                           <User className="w-6 h-6 text-[#A4907C]" /> 직원 연차 현황
-                        </h2>
-                        <p className="text-[#A4907C] text-sm mt-2 flex items-center gap-2">
-                            {statusMsg ? <span className="flex items-center gap-1 text-green-600"><CheckCircle className="w-4 h-4"/> {statusMsg}</span> : <span className="flex items-center gap-1"><RefreshCw className="w-4 h-4"/> 구글 시트와 자동 동기화됩니다.</span>}
-                        </p>
-                    </div>
-                    <button onClick={addStaff} className={`${theme.primary} text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md transition`}>
-                        <Plus className="w-4 h-4" /> 직원 추가
-                    </button>
-                </div>
-                {loading ? <div className="py-20 text-center text-[#8D7B68] animate-pulse">데이터 불러오는 중...</div> : (
-                    <div className="overflow-x-auto rounded-xl border border-[#F0EAE4]">
-                        <table className="w-full text-sm text-left text-[#5C5552]">
-                            <thead className="text-xs text-[#8D7B68] uppercase bg-[#F2EBE5]">
-                                <tr>
-                                    <th className="px-4 py-4 text-center w-12 font-bold">No</th><th className="px-4 py-4 font-bold">성명</th><th className="px-4 py-4 font-bold">직급</th><th className="px-4 py-4 w-32 font-bold">입사일</th><th className="px-4 py-4 text-center bg-[#EBE5DD] font-bold">발생</th><th className="px-4 py-4 text-center bg-[#F5E6E6] text-[#A66E6E] font-bold">사용</th><th className="px-4 py-4 text-center bg-[#E6F0E6] text-[#6E9675] font-bold">잔여</th><th className="px-4 py-4 font-bold">비고</th><th className="px-4 py-4 text-center w-16">관리</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#F0EAE4]">
-                                {staffData.map((staff, index) => {
-                                    const remain = (parseFloat(staff.total) || 0) - (parseFloat(staff.used) || 0);
-                                    return (
-                                        <tr key={index} className="bg-white hover:bg-[#F9F7F2] transition">
-                                            <td className="px-4 py-3 text-center text-[#A4907C]">{index + 1}</td>
-                                            <td className="px-4 py-3"><input type="text" value={staff.name} onChange={(e) => handleUpdate(index, 'name', e.target.value)} onBlur={handleBlur} className="w-20 bg-transparent outline-none border-b border-transparent focus:border-[#8D7B68]" placeholder="이름" /></td>
-                                            <td className="px-4 py-3"><input type="text" value={staff.role} onChange={(e) => handleUpdate(index, 'role', e.target.value)} onBlur={handleBlur} className="w-20 bg-transparent outline-none border-b border-transparent focus:border-[#8D7B68]" placeholder="직급" /></td>
-                                            <td className="px-4 py-3"><input type="date" value={staff.date} onChange={(e) => handleUpdate(index, 'date', e.target.value)} onBlur={handleBlur} className="w-full bg-transparent outline-none cursor-pointer" /></td>
-                                            <td className="px-4 py-3 text-center"><input type="number" value={staff.total} onChange={(e) => handleUpdate(index, 'total', e.target.value)} onBlur={handleBlur} className="w-12 text-center bg-[#EBE5DD] rounded py-1 outline-none" /></td>
-                                            <td className="px-4 py-3 text-center"><input type="number" value={staff.used} onChange={(e) => handleUpdate(index, 'used', e.target.value)} onBlur={handleBlur} className="w-12 text-center bg-[#F5E6E6] rounded py-1 text-[#A66E6E] font-bold outline-none" /></td>
-                                            <td className="px-4 py-3 text-center"><span className={`font-bold text-lg ${remain <= 0 ? 'text-[#A66E6E]' : 'text-[#6E9675]'}`}>{remain}</span></td>
-                                            <td className="px-4 py-3"><input type="text" value={staff.memo} onChange={(e) => handleUpdate(index, 'memo', e.target.value)} onBlur={handleBlur} className="w-full bg-transparent outline-none" placeholder="메모" /></td>
-                                            <td className="px-4 py-3 text-center"><button onClick={() => deleteStaff(index)} className="text-[#DBCCC0] hover:text-[#A66E6E] p-1"><AlertCircle className="w-5 h-5"/></button></td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
