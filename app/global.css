@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 기본 배경색 설정 (깜빡임 방지) */
+body {
+  background-color: #FDFBF7;
+}
+
+/* 인쇄 시 배경 그래픽 출력 강제 */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
