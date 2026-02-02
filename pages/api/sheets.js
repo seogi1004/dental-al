@@ -114,7 +114,7 @@ export default async function handler(req, res) {
         // 만약 gid를 모르면 비로그인 시에는 달력 데이터가 안 나올 수 있습니다.
         // 일단 예시로 gid만 바꿔서 요청하는 구조입니다.
         // *실제 사용 시 아래 gid 값을 "2026년" 시트의 gid로 꼭 바꿔주세요.*
-        const GID_CALENDAR = "0"; // <-- [수정 필요] 여기에 2026년 시트의 GID 입력
+        const GID_CALENDAR = "191374435"; // <-- [수정 필요] 여기에 2026년 시트의 GID 입력
         const urlCalendar = `${csvUrlBase}?gid=${GID_CALENDAR}&single=true&output=csv`;
 
         const [textSummary, textCalendar] = await Promise.all([
