@@ -505,6 +505,7 @@ export default function DentalLeaveApp() {
             {/* 날짜 셀 */}
             {Array.from({ length: daysInMonth }).map((_, i) => {
                 const day = i + 1;
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const leaves = getLeavesForDay(day);
                 const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
                 const dateObj = new Date(year, month, day);
