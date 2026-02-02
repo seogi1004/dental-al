@@ -5,8 +5,9 @@ import { authOptions } from "./auth/[...nextauth]";
 export default async function handler(req, res) {
   let session = null;
   
-  // [설정] 로그인 시 사용할 시트 정보 (수정용)
-  const SHEET_NAME = '연차계산'; 
+  // 시트 이름 설정
+  const SHEET_SUMMARY = '연차계산'; // 요약 정보
+  const SHEET_CALENDAR = '2026년';  // 달력 상세 정보
 
   try {
     session = await getServerSession(req, res, authOptions);
@@ -15,7 +16,9 @@ export default async function handler(req, res) {
   }
 
   // ============================================================
-  // [POST] 데이터 저장 (로그인 필수) - Google API 사용
+  // [POST] 데이터 저장 (로그인 필수)
+  // ※ 현재 로직은 '연차계산' 시트(요약)만 수정합니다. 
+  //   '2026년' 시트는 구조가 복잡하여 읽기 전용으로 유지하는 것이 안전합니다.
   // ============================================================
   if (req.method === 'POST') {
     if (!session) {
@@ -33,6 +36,7 @@ export default async function handler(req, res) {
       const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
       const newData = req.body;
+      // 요약 시트에 들어갈 데이터만 추출 (이름, 직급, 입사일, 발생, 사용, 비고)
       const rows = newData.map(item => [
         item.name, item.role, item.date, item.total, item.used, item.memo
       ]);
@@ -40,13 +44,13 @@ export default async function handler(req, res) {
       // 1. 기존 데이터 지우기
       await sheets.spreadsheets.values.clear({
         spreadsheetId,
-        range: `${SHEET_NAME}!A2:F1000`
+        range: `${SHEET_SUMMARY}!A2:F1000`
       });
 
       // 2. 새 데이터 쓰기
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${SHEET_NAME}!A2`,
+        range: `${SHEET_SUMMARY}!A2`,
         valueInputOption: 'USER_ENTERED',
         resource: { values: rows },
       });
@@ -60,84 +64,122 @@ export default async function handler(req, res) {
   }
 
   // ============================================================
-  // [GET] 데이터 읽기
+  // [GET] 데이터 읽기 (두 시트 병합)
   // ============================================================
   if (req.method === 'GET') {
     try {
-      // 1. 로그인이 되어 있다면 -> Google API로 읽기 (가장 정확하고 빠름)
+      let summaryRows = [];
+      let calendarRows = [];
+
+      // --------------------------------------------------------
+      // CASE 1: 로그인 유저 -> Google API 사용 (정확함)
+      // --------------------------------------------------------
       if (session) {
         const auth = new google.auth.OAuth2(
           process.env.GOOGLE_CLIENT_ID,
           process.env.GOOGLE_CLIENT_SECRET
         );
         auth.setCredentials({ access_token: session.accessToken });
-
         const sheets = google.sheets({ version: 'v4', auth });
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-        const response = await sheets.spreadsheets.values.get({
-          spreadsheetId,
-          range: `${SHEET_NAME}!A2:F`,
-        });
+        // 두 시트 동시에 요청
+        const [resSummary, resCalendar] = await Promise.all([
+          sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: `${SHEET_SUMMARY}!A2:F`,
+          }),
+          sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: `${SHEET_CALENDAR}!A3:ZZ`, // 3행부터, E열(인덱스 4) 이후 데이터 검색
+          })
+        ]);
 
-        const rows = response.data.values;
-        if (!rows || rows.length === 0) return res.status(200).json([]);
-
-        return res.status(200).json(mapRowsToData(rows));
+        summaryRows = resSummary.data.values || [];
+        calendarRows = resCalendar.data.values || [];
       } 
       
-      // 2. 로그인이 안 되어 있다면 -> [웹에 게시된 CSV] 읽기 (공개 데이터)
+      // --------------------------------------------------------
+      // CASE 2: 비로그인 유저 -> CSV 파싱 (공개 링크)
+      // --------------------------------------------------------
       else {
-        // ★ 중요: 고객님이 제공해주신 '웹에 게시' 전용 링크를 사용합니다.
-        // 이 링크는 로그인 권한과 상관없이 데이터를 줍니다.
-        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPph1JA3oxqJG0x78pFA_WxZTmxNsZzecThtyRLavlMiCd-0-ELMTZaIuWAwuP0PJK_b-NhYI5KDPa/pub?gid=0&single=true&output=csv";
+        // [중요] 2번째 시트("2026년")의 gid 값을 확인해서 아래 주소를 수정해야 합니다!
+        // 엑셀 웹 주소창에서 'gid=숫자' 부분을 확인하세요.
+        const csvUrlBase = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPph1JA3oxqJG0x78pFA_WxZTmxNsZzecThtyRLavlMiCd-0-ELMTZaIuWAwuP0PJK_b-NhYI5KDPa/pub";
         
-        // 캐시 방지를 위해 타임스탬프 추가
-        const response = await fetch(`${csvUrl}&t=${Date.now()}`);
+        // 1번 시트 (연차계산) - gid=0 (보통 첫번째 시트)
+        const urlSummary = `${csvUrlBase}?gid=0&single=true&output=csv`;
         
-        if (!response.ok) {
-          console.error(`CSV Fetch Failed (${response.status})`);
-          return res.status(200).json([]);
-        }
+        // 2번 시트 (2026년) - gid=??? (직접 확인 필요, 여기선 예시로 123456789라 가정하거나, 첫번째 시트만 읽히는 문제 방지 필요)
+        // 만약 gid를 모르면 비로그인 시에는 달력 데이터가 안 나올 수 있습니다.
+        // 일단 예시로 gid만 바꿔서 요청하는 구조입니다.
+        // *실제 사용 시 아래 gid 값을 "2026년" 시트의 gid로 꼭 바꿔주세요.*
+        const GID_CALENDAR = "0"; // <-- [수정 필요] 여기에 2026년 시트의 GID 입력
+        const urlCalendar = `${csvUrlBase}?gid=${GID_CALENDAR}&single=true&output=csv`;
 
-        const csvText = await response.text();
-        
-        // 만약 여전히 로그인 페이지가 뜬다면 (HTML 반환) 뭔가 잘못된 것
-        if (csvText.includes("<!DOCTYPE html") || csvText.includes("google.com/accounts")) {
-           console.error("Error: 구글 로그인 페이지가 반환됨. 링크를 다시 확인해주세요.");
-           return res.status(200).json([]);
-        }
+        const [textSummary, textCalendar] = await Promise.all([
+            fetch(`${urlSummary}&t=${Date.now()}`).then(r => r.ok ? r.text() : ""),
+            fetch(`${urlCalendar}&t=${Date.now()}`).then(r => r.ok ? r.text() : "")
+        ]);
 
-        const rows = parseCSV(csvText);
+        const parsedSummary = parseCSV(textSummary);
+        const parsedCalendar = parseCSV(textCalendar);
 
-        // 헤더만 있거나 비어있으면 빈 배열
-        if (rows.length <= 1) return res.status(200).json([]);
-        
-        // 1행(헤더) 제외하고 2행부터 데이터로 사용
-        return res.status(200).json(mapRowsToData(rows.slice(1)));
+        // 헤더 제거 (summary는 1행, calendar는 2행이 헤더이므로 데이터 시작점 조정)
+        summaryRows = parsedSummary.slice(1); 
+        calendarRows = parsedCalendar.slice(2); // 3행부터 데이터 시작
       }
+
+      // --------------------------------------------------------
+      // 데이터 병합 (Merge)
+      // --------------------------------------------------------
+      
+      // 1. 달력 데이터 정리 (이름 -> 날짜 배열 맵 생성)
+      const calendarMap = {};
+      calendarRows.forEach(row => {
+        const name = row[0]; // A열: 이름
+        // E열(인덱스 4)부터 끝까지 돌면서 날짜가 있는 셀만 수집
+        const dates = [];
+        for (let i = 4; i < row.length; i++) {
+            if (row[i] && row[i].trim() !== '') {
+                dates.push(row[i].trim());
+            }
+        }
+        if (name) {
+            calendarMap[name] = dates;
+        }
+      });
+
+      // 2. 요약 데이터에 달력 데이터 합치기
+      const combinedData = summaryRows.map(row => {
+        const name = row[0] || '';
+        const baseData = {
+            name: name,
+            role: row[1] || '',
+            date: row[2] || '',
+            total: row[3] || 0,
+            used: row[4] || 0,
+            memo: row[5] || ''
+        };
+
+        // 이름이 일치하는 달력 데이터가 있으면 추가, 없으면 빈 배열
+        baseData.leaves = calendarMap[name] || [];
+        
+        return baseData;
+      });
+
+      return res.status(200).json(combinedData);
 
     } catch (error) {
       console.error("Fetch Error:", error);
-      return res.status(200).json([]);
+      return res.status(200).json([]); // 에러 시 빈 배열 반환
     }
   }
 }
 
-// 헬퍼 함수: 행 데이터를 객체로 변환
-function mapRowsToData(rows) {
-  return rows.map(row => ({
-    name: row[0] || '',   // 이름
-    role: row[1] || '',   // 직급
-    date: row[2] || '',   // 입사일
-    total: row[3] || 0,   // 발생
-    used: row[4] || 0,    // 사용
-    memo: row[5] || ''    // 비고
-  }));
-}
-
-// 헬퍼 함수: CSV 파서 (쉼표, 따옴표 처리)
+// 헬퍼 함수: CSV 파서 (기존 유지)
 function parseCSV(text) {
+  if (!text) return [];
   const rows = [];
   let currentRow = [];
   let currentCell = '';
@@ -160,7 +202,6 @@ function parseCSV(text) {
     } else if ((char === '\r' || char === '\n') && !insideQuote) {
       if (char === '\r' && nextChar === '\n') i++;
       currentRow.push(currentCell.trim());
-      // 빈 줄 무시
       if (currentRow.length > 0 && currentRow.some(c => c !== '')) {
         rows.push(currentRow);
       }
@@ -170,11 +211,9 @@ function parseCSV(text) {
       currentCell += char;
     }
   }
-  // 마지막 줄 처리
   if (currentCell || currentRow.length > 0) {
     currentRow.push(currentCell.trim());
     if (currentRow.some(c => c !== '')) rows.push(currentRow);
   }
-  
   return rows;
 }
