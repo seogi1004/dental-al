@@ -553,8 +553,8 @@ export default function DentalLeaveApp() {
                                                       <input type="text" value={staff.name} 
                                                           onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
                                                           onBlur={handleBlur} 
-                                                          readOnly={!isSessionActive}
-                                                          className={`w-20 bg-transparent outline-none border-b focus:border-[#8D7B68] dark:focus:border-[#A4907C] placeholder-[#DBCCC0] ${!isSessionActive ? 'border-transparent cursor-default' : 'border-transparent'}`} 
+                                                          readOnly={!staff.isNew} // 기존 직원은 수정 불가
+                                                          className={`w-20 bg-transparent outline-none border-b ${staff.isNew ? 'border-[#8D7B68] focus:border-[#8D7B68] dark:focus:border-[#A4907C] cursor-text' : 'border-transparent cursor-default opacity-80'} placeholder-[#DBCCC0]`} 
                                                           placeholder="이름" 
                                                       />
                                                   </td>
@@ -629,8 +629,8 @@ export default function DentalLeaveApp() {
                                          <input type="text" value={staff.name} 
                                              onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
                                              onBlur={handleBlur} 
-                                             readOnly={!isSessionActive}
-                                             className="text-lg font-bold w-20 bg-transparent outline-none border-b border-[#F0EAE4] dark:border-[#333333] focus:border-[#8D7B68] dark:focus:border-[#A4907C] placeholder-[#DBCCC0] text-[#5C5552] dark:text-[#E0E0E0]"
+                                             readOnly={!staff.isNew}
+                                             className={`text-lg font-bold w-20 bg-transparent outline-none border-b ${staff.isNew ? 'border-[#8D7B68] dark:border-[#A4907C] focus:border-[#8D7B68]' : 'border-transparent'} placeholder-[#DBCCC0] text-[#5C5552] dark:text-[#E0E0E0]`}
                                              placeholder="이름"
                                           />
                                          <input type="text" value={staff.role} 
