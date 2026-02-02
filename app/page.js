@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Printer, Plus, RefreshCw, CheckCircle, 
   Calendar, User, FileText, LogOut, X, LogIn, 
-  Trash2, Clock, CalendarDays, AlertCircle
+  Trash2, Clock, CalendarDays, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -19,26 +19,34 @@ const theme = {
   accent: "text-[#A4907C]"
 };
 
-// [시뮬레이션 데이터] 실제 배포 시에는 API에서 두 시트("현황표", "2026년")를 조인해서 가져와야 합니다.
+// [시뮬레이션 데이터]
 const MOCK_DB_DATA = [
   { 
     name: "최지원", 
-    role: "일반", 
-    date: "2026-01-19", 
-    total: 11, 
-    used: 1, 
+    role: "실장", 
+    date: "2018-03-01", 
+    total: 18, 
+    used: 5, 
     memo: "", 
-    // 두번째 시트 "2026년"에서 읽어온 연차 사용 날짜들
-    leaves: ["2026-02-03"] 
+    leaves: ["2026-02-03", "2026-02-04", "2026-02-20"] 
   },
   { 
     name: "홍재석", 
-    role: "직원", 
-    date: "2026-02-02", 
-    total: 11, 
+    role: "원장", 
+    date: "2015-01-01", 
+    total: 0, 
     used: 0, 
     memo: "", 
-    leaves: [] 
+    leaves: ["2026-02-14"] 
+  },
+  { 
+    name: "김민지", 
+    role: "치위생사", 
+    date: "2024-01-10", 
+    total: 15, 
+    used: 2, 
+    memo: "", 
+    leaves: ["2026-02-03", "2026-02-10"] 
   }
 ];
 
@@ -52,6 +60,9 @@ export default function DentalLeaveApp() {
   const [statusMsg, setStatusMsg] = useState('');
   const [saveTimeout, setSaveTimeout] = useState(null);
 
+  // 달력 뷰를 위한 현재 기준 날짜 (월 이동용)
+  const [viewDate, setViewDate] = useState(new Date());
+
   // ==================================================================================
   // Helper: 날짜 관련 유틸리티
   // ==================================================================================
@@ -63,7 +74,7 @@ export default function DentalLeaveApp() {
     return `${d.getMonth() + 1}/${d.getDate()}(${week[d.getDay()]})`;
   };
 
-  // 이번 달 연차 목록 추출
+  // 이번 달 리스트 (모바일용)
   const getCurrentMonthLeaves = useCallback(() => {
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -85,7 +96,6 @@ export default function DentalLeaveApp() {
         });
       }
     });
-    // 날짜순 정렬
     return leavesList.sort((a, b) => a.dateObj - b.dateObj);
   }, [staffData]);
 
@@ -103,7 +113,6 @@ export default function DentalLeaveApp() {
     try {
       const res = await fetch('/api/sheets'); 
       if (!res.ok) {
-        // API 연동 전이거나 실패 시 시뮬레이션 데이터 사용
         setStaffData(MOCK_DB_DATA); 
         setStatusMsg('데이터 로드 완료 (데모)');
         return;
@@ -113,7 +122,6 @@ export default function DentalLeaveApp() {
       setStatusMsg('동기화 완료');
     } catch (error) {
       console.error("Fetch Error:", error);
-      // 에러 시에도 데모 데이터 로드
       setStaffData(MOCK_DB_DATA);
       setStatusMsg('연결 오류 (데모 모드)');
     } finally {
@@ -198,7 +206,7 @@ export default function DentalLeaveApp() {
       total: 11, 
       used: 0, 
       memo: "",
-      leaves: [], // 새 직원 연차 목록 초기화
+      leaves: [],
       isNew: true 
     };
     const newData = [...staffData, newItem];
@@ -216,19 +224,24 @@ export default function DentalLeaveApp() {
   };
 
   // ==================================================================================
-  // 컴포넌트: 대시보드 카드들
+  // 컴포넌트: 대시보드 위젯
   // ==================================================================================
   
-  // 1. 오늘의 현황 카드
+  // 1. 오늘의 현황 카드 (공통)
   const TodayStatusCard = () => {
     const todayLeaves = getTodayLeaves();
     return (
-      <div className="bg-[#8D7B68] text-white p-5 rounded-2xl shadow-lg flex items-center justify-between mb-4">
+      <div className="bg-[#8D7B68] text-white p-5 rounded-2xl shadow-lg flex items-center justify-between mb-4 h-full">
         <div>
           <h3 className="text-sm opacity-90 mb-1 flex items-center gap-1"><Clock className="w-4 h-4"/> 오늘의 현황</h3>
           <p className="text-2xl font-bold">
             {todayLeaves.length > 0 ? `${todayLeaves.length}명 휴가 중` : "전원 출근"}
           </p>
+          {todayLeaves.length > 0 && (
+             <div className="text-xs mt-2 opacity-80">
+                {todayLeaves.map(p => p.name).join(', ')}
+             </div>
+          )}
         </div>
         <div className="bg-white/20 p-3 rounded-full">
            <CheckCircle className="w-6 h-6 text-white" />
@@ -237,8 +250,8 @@ export default function DentalLeaveApp() {
     );
   };
 
-  // 2. 이번 달 연차 일정 카드 (요청하신 2번째 카드)
-  const MonthlyScheduleCard = () => {
+  // 2. 모바일용 리스트 뷰
+  const MobileScheduleList = () => {
     const leaves = getCurrentMonthLeaves();
     const todayMonth = new Date().getMonth() + 1;
 
@@ -250,7 +263,7 @@ export default function DentalLeaveApp() {
         
         {leaves.length === 0 ? (
           <div className="text-center py-6 text-[#A4907C] text-sm bg-[#FDFBF7] rounded-xl">
-             이번 달 예정된 연차가 없습니다.
+              이번 달 예정된 연차가 없습니다.
           </div>
         ) : (
           <div className="space-y-3">
@@ -278,6 +291,95 @@ export default function DentalLeaveApp() {
     );
   };
 
+  // 3. 데스크탑용 캘린더 뷰 (NEW)
+  const DesktopCalendar = () => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth(); // 0 ~ 11
+
+    // 달력 계산
+    const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0(일) ~ 6(토)
+    const daysInMonth = new Date(year, month + 1, 0).getDate(); // 마지막 날짜
+
+    // 이전/다음 달 이동
+    const moveMonth = (delta) => {
+      const newDate = new Date(viewDate);
+      newDate.setMonth(newDate.getMonth() + delta);
+      setViewDate(newDate);
+    };
+
+    // 해당 날짜에 휴가인 사람 찾기
+    const getLeavesForDay = (day) => {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const list = [];
+      staffData.forEach(staff => {
+        if (staff.leaves?.includes(dateStr)) {
+          list.push({ name: staff.name, role: staff.role });
+        }
+      });
+      return list;
+    };
+
+    const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+    return (
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#F0EAE4] mb-6">
+        {/* 달력 헤더 */}
+        <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-[#5C5552] flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-[#8D7B68]"/> 
+                {year}년 {month + 1}월 일정
+            </h3>
+            <div className="flex gap-2">
+                <button onClick={() => moveMonth(-1)} className="p-1 hover:bg-[#F2EBE5] rounded-full text-[#8D7B68]"><ChevronLeft /></button>
+                <button onClick={() => setViewDate(new Date())} className="text-sm px-3 py-1 bg-[#F2EBE5] rounded-full text-[#8D7B68] font-bold">오늘</button>
+                <button onClick={() => moveMonth(1)} className="p-1 hover:bg-[#F2EBE5] rounded-full text-[#8D7B68]"><ChevronRight /></button>
+            </div>
+        </div>
+
+        {/* 달력 그리드 */}
+        <div className="grid grid-cols-7 border-t border-l border-[#F0EAE4]">
+            {/* 요일 헤더 */}
+            {weekDays.map((day, i) => (
+                <div key={day} className={`text-center text-xs font-bold py-2 border-r border-b border-[#F0EAE4] bg-[#FDFBF7] ${i===0 ? 'text-red-400' : i===6 ? 'text-blue-400' : 'text-[#8D7B68]'}`}>
+                    {day}
+                </div>
+            ))}
+
+            {/* 빈 칸 (월 시작 전) */}
+            {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                <div key={`empty-${i}`} className="h-24 border-r border-b border-[#F0EAE4] bg-[#FAFAFA]"></div>
+            ))}
+
+            {/* 날짜 셀 */}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1;
+                const leaves = getLeavesForDay(day);
+                const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
+                const dateObj = new Date(year, month, day);
+                const dayOfWeek = dateObj.getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+                return (
+                    <div key={day} className={`h-24 border-r border-b border-[#F0EAE4] p-1 relative hover:bg-[#FDFBF7] transition group ${isToday ? 'bg-[#FFF9F0]' : ''}`}>
+                        <span className={`text-sm font-bold absolute top-1 left-2 ${dayOfWeek === 0 ? 'text-red-400' : dayOfWeek === 6 ? 'text-blue-400' : 'text-[#5C5552]'}`}>
+                            {day} {isToday && <span className="text-[10px] bg-[#8D7B68] text-white px-1.5 rounded-full ml-1 align-top">Today</span>}
+                        </span>
+                        
+                        <div className="mt-6 flex flex-col gap-1 overflow-y-auto max-h-[calc(100%-24px)] custom-scrollbar">
+                            {leaves.map((person, idx) => (
+                                <div key={idx} className="text-xs bg-[#F2EBE5] text-[#5C5552] px-1.5 py-0.5 rounded border border-[#EBE5DD] truncate" title={`${person.name} (${person.role})`}>
+                                    <strong>{person.name}</strong> <span className="opacity-70 text-[10px]">{person.role}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+      </div>
+    );
+  };
+
   // ==================================================================================
   // 렌더링
   // ==================================================================================
@@ -288,7 +390,7 @@ export default function DentalLeaveApp() {
 
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.text} p-4 md:p-8 flex justify-center font-sans`}>
-      <div className={`w-full max-w-5xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px]`}>
+      <div className={`w-full max-w-6xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px]`}>
         
         {/* 헤더 */}
         <div className="bg-[#8D7B68] p-6 text-white flex flex-col md:flex-row justify-between items-center shadow-md print:hidden">
@@ -328,23 +430,38 @@ export default function DentalLeaveApp() {
         {/* 탭 1: 연차 현황표 */}
         {activeTab === 'list' && (
           <div className="p-4 md:p-8 bg-[#FDFBF7] h-full">
-            <div className="w-full max-w-5xl mx-auto">
-                {/* [모바일 대시보드 영역] 
-                  1. TodayStatusCard (오늘 현황)
-                  2. MonthlyScheduleCard (이번달 일정 - 요청사항)
-                */}
+            <div className="w-full mx-auto">
+                
+                {/* 1. 모바일 뷰 (< md) */}
                 <div className="md:hidden">
-                    <TodayStatusCard />
-                    <MonthlyScheduleCard />
+                   <div className="mb-4"><TodayStatusCard /></div>
+                   <MobileScheduleList />
                 </div>
 
-                {/* 메인 리스트 컨테이너 */}
+                {/* 2. 데스크탑 뷰 (>= md) */}
+                <div className="hidden md:block">
+                    <div className="grid grid-cols-4 gap-6 mb-6">
+                        <div className="col-span-1">
+                            <TodayStatusCard />
+                        </div>
+                        <div className="col-span-3">
+                             {/* 여기엔 공지사항이나 연차 통계 그래프 등을 넣을 수 있음. 일단은 비워둠 */}
+                             <div className="h-full bg-white rounded-2xl border border-[#F0EAE4] p-5 flex items-center justify-center text-[#DBCCC0]">
+                                더데이치과 연차 관리 시스템
+                             </div>
+                        </div>
+                    </div>
+                    {/* 데스크탑은 큰 달력 표시 */}
+                    <DesktopCalendar />
+                </div>
+
+                {/* 메인 직원 리스트 (공통 - 테이블/카드 변환) */}
                 <div className="bg-white rounded-2xl shadow-sm p-4 md:p-8 border border-[#F0EAE4]">
                     <div className="flex justify-between items-end mb-6 pb-6 border-b border-[#F0EAE4]">
                         <div>
                             <h2 className="text-xl md:text-2xl font-bold text-[#5C5552] flex items-center gap-2">
                                <User className="w-6 h-6 text-[#A4907C]" /> 
-                               <span className="hidden md:inline">직원 연차 현황 (2026년)</span>
+                               <span className="hidden md:inline">직원 연차 리스트</span>
                                <span className="md:hidden">직원 리스트</span>
                             </h2>
                             <p className="text-[#A4907C] text-xs md:text-sm mt-2 flex items-center gap-2">
@@ -367,7 +484,7 @@ export default function DentalLeaveApp() {
                     ) : (
                         <>
                           {/* ======================= */}
-                          {/* 1. 데스크탑 뷰 (테이블) */}
+                          {/* 데스크탑 뷰 (테이블) */}
                           {/* ======================= */}
                           <div className="hidden md:block overflow-x-auto rounded-xl border border-[#F0EAE4]">
                               <table className="w-full text-sm text-left text-[#5C5552]">
@@ -457,7 +574,7 @@ export default function DentalLeaveApp() {
                           </div>
 
                           {/* ======================= */}
-                          {/* 2. 모바일 뷰 (카드 리스트) */}
+                          {/* 모바일 뷰 (카드 리스트) */}
                           {/* ======================= */}
                           <div className="md:hidden space-y-4">
                             {staffData.map((staff, index) => {
@@ -469,19 +586,19 @@ export default function DentalLeaveApp() {
                                     <div className="flex justify-between items-start">
                                        <div className="flex items-end gap-2">
                                          <input type="text" value={staff.name} 
-                                            onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
-                                            onBlur={handleBlur} 
-                                            readOnly={!isSessionActive}
-                                            className="text-lg font-bold w-20 bg-transparent outline-none border-b border-[#F0EAE4] focus:border-[#8D7B68] placeholder-[#DBCCC0]"
-                                            placeholder="이름"
-                                         />
+                                             onChange={(e) => handleUpdate(index, 'name', e.target.value)} 
+                                             onBlur={handleBlur} 
+                                             readOnly={!isSessionActive}
+                                             className="text-lg font-bold w-20 bg-transparent outline-none border-b border-[#F0EAE4] focus:border-[#8D7B68] placeholder-[#DBCCC0]"
+                                             placeholder="이름"
+                                          />
                                          <input type="text" value={staff.role} 
-                                            onChange={(e) => handleUpdate(index, 'role', e.target.value)} 
-                                            onBlur={handleBlur} 
-                                            readOnly={!isSessionActive}
-                                            className="text-sm text-[#8D8D8D] w-16 bg-transparent outline-none focus:text-[#5C5552]"
-                                            placeholder="직급"
-                                         />
+                                             onChange={(e) => handleUpdate(index, 'role', e.target.value)} 
+                                             onBlur={handleBlur} 
+                                             readOnly={!isSessionActive}
+                                             className="text-sm text-[#8D8D8D] w-16 bg-transparent outline-none focus:text-[#5C5552]"
+                                             placeholder="직급"
+                                          />
                                        </div>
                                        {session && (
                                          <button onClick={() => deleteStaff(index)} className="text-[#DBCCC0] hover:text-[#A66E6E] p-1">
