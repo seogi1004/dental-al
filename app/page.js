@@ -540,16 +540,16 @@ export default function DentalLeaveApp() {
             <div className="w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
                 {/* 좌측 메인 컨텐츠 (9/12) */}
-                <div className="lg:col-span-9 space-y-6">
+                <div className="lg:col-span-9">
                     {/* 1. 모바일 뷰 (< md) */}
-                    <div className="md:hidden">
+                    <div className="md:hidden mb-6">
                        <div className="mb-4"><TodayStatusCard /></div>
                        <MobileScheduleList />
                     </div>
 
                     {/* 2. 데스크탑 뷰 (>= md) */}
-                    <div className="hidden md:block">
-                        <div className="grid grid-cols-4 gap-6 mb-6">
+                    <div className="hidden md:block space-y-6">
+                        <div className="grid grid-cols-4 gap-6">
                             <div className="col-span-2">
                                 <TodayStatusCard />
                             </div>
@@ -564,7 +564,7 @@ export default function DentalLeaveApp() {
                     </div>
 
                     {/* 메인 직원 리스트 (공통 - 테이블/카드 변환) */}
-                    <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl shadow-sm p-4 md:p-8 border border-[#F0EAE4] dark:border-[#333333] transition-colors duration-300">
+                        <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl shadow-sm p-4 md:p-8 border border-[#F0EAE4] dark:border-[#333333] transition-colors duration-300">
                         <div className="flex justify-between items-end mb-6 pb-6 border-b border-[#F0EAE4] dark:border-[#333333]">
                             <div>
                                 <h2 className="text-xl md:text-2xl font-bold text-[#5C5552] dark:text-[#E0E0E0] flex items-center gap-2">
