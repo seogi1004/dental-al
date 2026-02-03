@@ -5,6 +5,7 @@ import { Staff } from '@/types';
 import { parseLeaveDate, isValidDate, formatDate } from '@/lib/date';
 import { addOff, updateOff, deleteOff } from '@/services/off';
 import { signOut } from "next-auth/react";
+import { MESSAGES } from '@/lib/messages';
 
 const handleApiError = (e: any) => {
   if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
@@ -192,17 +193,13 @@ export default function DesktopCalendar({
   const handleOffClick = async (name: string, originalDate: string) => {
     if (!session?.isAdmin) return;
 
-    const newDate = prompt(`${name}님의 오프 (${originalDate}) 수정
-
-오프 날짜를 수정하세요 (M/D 형식):
-예: 1/15`, originalDate);
+    const newDate = prompt(MESSAGES.off.edit.prompt(name, originalDate), originalDate);
     
     if (!newDate || newDate === originalDate) return;
 
     const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])$/;
     if (!datePattern.test(newDate.trim())) {
-      alert(`올바른 날짜 형식으로 입력해주세요. (M/D)
-예: 1/15`);
+      alert(MESSAGES.validation.invalidOffDate);
       return;
     }
     
@@ -211,7 +208,7 @@ export default function DesktopCalendar({
       onRefresh();
     } catch (e: any) {
       if (!handleApiError(e)) {
-        alert("수정 실패: " + e.message);
+        alert(MESSAGES.off.edit.failure(e.message));
       }
     }
   };
@@ -220,14 +217,12 @@ export default function DesktopCalendar({
     if (!session?.isAdmin) return;
 
     const staffNames = staffData.map(s => s.name).join(', ');
-    const name = prompt(`오프를 추가할 직원 이름을 입력하세요:
-
-현재 직원: ${staffNames}`);
+    const name = prompt(MESSAGES.off.add.namePrompt(staffNames));
     if (!name) return;
     
     const staff = staffData.find(s => s.name === name.trim());
     if (!staff) {
-      alert("존재하지 않는 직원입니다.");
+      alert(MESSAGES.staff.notFound);
       return;
     }
 
@@ -241,7 +236,7 @@ export default function DesktopCalendar({
       onRefresh();
     } catch (e: any) {
       if (!handleApiError(e)) {
-        alert("오프 추가 실패: " + e.message);
+        alert(MESSAGES.off.add.failure(e.message));
       }
     }
   };
@@ -374,7 +369,7 @@ export default function DesktopCalendar({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if(confirm(`${off.name}님의 오프를 삭제하시겠습니까?`)) {
+                          if(confirm(MESSAGES.off.delete.desktopConfirm(off.name))) {
                              deleteOff(off.name, off.originalDate)
                                .then(onRefresh)
                                .catch(e => {

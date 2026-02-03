@@ -16,7 +16,8 @@ import { getTodayString, formatDate, parseLeaveDate } from '@/lib/date';
 import { UserMenu, TodayStatusCard, MobileScheduleList, DesktopCalendar, HelpPanel } from '@/components';
 import { WarningBanner } from '@/components/DesktopCalendar';
 import { useSheetData, useLeaveCalculations } from '@/hooks';
-import { addLeave, updateLeave, deleteLeave } from '@/services';
+import { addLeave, updateLeave, deleteLeave, addOff } from '@/services';
+import { MESSAGES } from '@/lib/messages';
 
 export default function DentalLeaveApp() {
   const { data: session, status } = useSession();
@@ -114,16 +115,13 @@ export default function DentalLeaveApp() {
       }
     } catch(e) {}
     
-    const newValue = prompt(`연차 날짜를 수정하세요 (M/D 형식):
-예: 1/15, 1/15 AM, 1/15 PM`, displayDate);
+    const newValue = prompt(MESSAGES.leave.edit.prompt, displayDate);
     if (newValue === null) return;
     if (newValue.trim() === '' || newValue.trim() === originalDate) return;
     
     const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM))?$/i;
     if (!datePattern.test(newValue.trim())) {
-      alert(`올바른 형식으로 입력해주세요.
-
-예: 1/15, 1/15 AM, 1/15 PM`);
+      alert(MESSAGES.validation.invalidDate);
       return;
     }
     
@@ -136,14 +134,14 @@ export default function DentalLeaveApp() {
         signOut({ callbackUrl: '/' });
         return;
       }
-      alert("수정 실패: " + e.message);
+      alert(MESSAGES.leave.edit.failure(e.message));
     }
   };
 
   const handleLeaveDeleteWrapper = async (staffName: string, originalDate: string) => {
     if (!isAdmin) return;
     
-    if (!confirm(`${staffName}님의 연차(${originalDate})를 삭제하시겠습니까?`)) {
+    if (!confirm(MESSAGES.leave.delete.confirm(staffName, originalDate))) {
       return;
     }
     
@@ -156,7 +154,7 @@ export default function DentalLeaveApp() {
         signOut({ callbackUrl: '/' });
         return;
       }
-      alert("삭제 실패: " + e.message);
+      alert(MESSAGES.leave.delete.failure(e.message));
     }
   };
 
@@ -164,14 +162,12 @@ export default function DentalLeaveApp() {
     if (!isAdmin) return;
     
     const staffNames = staffData.map(s => s.name).join(', ');
-    const selectedName = prompt(`연차를 추가할 직원 이름을 입력하세요:
-
-현재 직원: ${staffNames}`);
+    const selectedName = prompt(MESSAGES.leave.add.namePrompt(staffNames));
     if (!selectedName) return;
     
     const staff = staffData.find(s => s.name === selectedName.trim());
     if (!staff) {
-      alert("존재하지 않는 직원입니다.");
+      alert(MESSAGES.staff.notFound);
       return;
     }
     
@@ -180,11 +176,7 @@ export default function DentalLeaveApp() {
     const dd = String(d.getDate());
     const baseDate = `${mm}/${dd}`;
     
-    const typeInput = prompt(`연차 타입을 입력하세요:
-
-• 공백 또는 Enter = 종일 연차
-• AM = 오전 반차
-• PM = 오후 반차`, "");
+    const typeInput = prompt(MESSAGES.leave.add.typePrompt, "");
     if (typeInput === null) return;
     
     let typeUpper = typeInput.trim().toUpperCase();
@@ -193,11 +185,7 @@ export default function DentalLeaveApp() {
     if (typeUpper === 'P') typeUpper = 'PM';
     
     if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
-      alert(`올바른 타입을 입력해주세요.
-
-• 공백 = 종일
-• AM = 오전 반차
-• PM = 오후 반차`);
+      alert(MESSAGES.validation.invalidType);
       return;
     }
     
@@ -207,11 +195,7 @@ export default function DentalLeaveApp() {
     });
     
     if (existingLeave) {
-      alert(`${staff.name}님은 이 날짜에 이미 연차가 등록되어 있습니다.
-
-기존: ${existingLeave.original}
-
-수정이 필요하면 기존 항목을 클릭해주세요.`);
+      alert(MESSAGES.leave.add.alreadyExists(staff.name, existingLeave.original));
       return;
     }
     
@@ -226,14 +210,105 @@ export default function DentalLeaveApp() {
         signOut({ callbackUrl: '/' });
         return;
       }
-      alert("추가 실패: " + e.message);
+      alert(MESSAGES.leave.add.failure(e.message));
+    }
+  };
+
+  const handleMobileLeaveAdd = async () => {
+    if (!isAdmin) return;
+    
+    const staffNames = staffData.map(s => s.name).join(', ');
+    const selectedName = prompt(MESSAGES.leave.add.namePrompt(staffNames));
+    if (!selectedName) return;
+    
+    const staff = staffData.find(s => s.name === selectedName.trim());
+    if (!staff) {
+      alert(MESSAGES.staff.notFound);
+      return;
+    }
+    
+    const today = new Date();
+    const defaultDate = `${today.getMonth() + 1}/${today.getDate()}`;
+    const dateInput = prompt(`연차 날짜를 입력하세요 (M/D 형식):\n예: 1/15, 1/15 AM, 1/15 PM`, defaultDate);
+    if (!dateInput) return;
+    
+    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM))?$/i;
+    if (!datePattern.test(dateInput.trim())) {
+      alert(MESSAGES.validation.invalidDate);
+      return;
+    }
+    
+    let finalDate = dateInput.trim();
+    if (!finalDate.toUpperCase().includes('AM') && !finalDate.toUpperCase().includes('PM')) {
+      const typeInput = prompt(MESSAGES.leave.add.typePrompt, "");
+      if (typeInput === null) return;
+      
+      let typeUpper = typeInput.trim().toUpperCase();
+      if (typeUpper === 'A') typeUpper = 'AM';
+      if (typeUpper === 'P') typeUpper = 'PM';
+      
+      if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
+        alert(MESSAGES.validation.invalidType);
+        return;
+      }
+      
+      if (typeUpper) finalDate = `${finalDate} ${typeUpper}`;
+    }
+    
+    try {
+      await addLeave(staff.name, finalDate);
+      fetchSheetData();
+    } catch (e: any) {
+      console.error(e);
+      if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
+        signOut({ callbackUrl: '/' });
+        return;
+      }
+      alert(MESSAGES.leave.add.failure(e.message));
+    }
+  };
+
+  const handleMobileOffAdd = async () => {
+    if (!isAdmin) return;
+    
+    const staffNames = staffData.map(s => s.name).join(', ');
+    const selectedName = prompt(MESSAGES.off.add.namePrompt(staffNames));
+    if (!selectedName) return;
+    
+    const staff = staffData.find(s => s.name === selectedName.trim());
+    if (!staff) {
+      alert(MESSAGES.staff.notFound);
+      return;
+    }
+    
+    const today = new Date();
+    const defaultDate = `${today.getMonth() + 1}/${today.getDate()}`;
+    const dateInput = prompt(`오프 날짜를 입력하세요 (M/D 형식):\n예: 1/15`, defaultDate);
+    if (!dateInput) return;
+    
+    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])$/;
+    if (!datePattern.test(dateInput.trim())) {
+      alert(MESSAGES.validation.invalidOffDate);
+      return;
+    }
+    
+    try {
+      await addOff(staff.name, dateInput.trim());
+      fetchSheetData();
+    } catch (e: any) {
+      console.error(e);
+      if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
+        signOut({ callbackUrl: '/' });
+        return;
+      }
+      alert(MESSAGES.off.add.failure(e.message));
     }
   };
 
   const addStaff = () => {
     if (!isAdmin) return;
     if (staffData.length >= 14) {
-      alert("최대 직원 수(14명)를 초과하여 추가할 수 없습니다.");
+      alert(MESSAGES.staff.add.limitReached);
       return;
     }
     const newItem: Staff = {
@@ -253,7 +328,7 @@ export default function DentalLeaveApp() {
 
   const deleteStaff = (index: number) => {
     if (!isAdmin) return;
-    if (confirm("정말 삭제하시겠습니까?")) {
+    if (confirm(MESSAGES.staff.delete.confirm)) {
       const newData = staffData.filter((_, i) => i !== index);
       setStaffData(newData);
       saveSheetData(newData);
@@ -508,19 +583,22 @@ export default function DentalLeaveApp() {
                               statusMsg={statusMsg} 
                            />
                          </div>
-                          <MobileScheduleList 
-                            leaves={getCurrentMonthLeaves()}
-                            monthOffs={getCurrentMonthOffs()}
-                            onRefresh={fetchSheetData}
-                            onLeaveClick={handleLeaveClickWrapper}
-                            onLeaveDelete={handleLeaveDeleteWrapper}
-                            session={session as any}
-                            getTodayString={getTodayString}
-                            formatDate={formatDate}
-                            todayMonth={new Date().getMonth() + 1}
-                            invalidLeaves={invalidLeaves}
-                            sundayLeaves={sundayLeaves}
-                          />
+                           <MobileScheduleList 
+                             leaves={getCurrentMonthLeaves()}
+                             monthOffs={getCurrentMonthOffs()}
+                             onRefresh={fetchSheetData}
+                             onLeaveClick={handleLeaveClickWrapper}
+                             onLeaveDelete={handleLeaveDeleteWrapper}
+                             onLeaveAdd={handleMobileLeaveAdd}
+                             onOffAdd={handleMobileOffAdd}
+                             session={session as any}
+                             getTodayString={getTodayString}
+                             formatDate={formatDate}
+                             todayMonth={new Date().getMonth() + 1}
+                             invalidLeaves={invalidLeaves}
+                             sundayLeaves={sundayLeaves}
+                           />
+
                       </div>
 
                      <div className="hidden md:block space-y-6">

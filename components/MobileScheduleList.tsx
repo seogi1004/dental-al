@@ -1,12 +1,13 @@
 'use client';
 
-import { CalendarDays, X } from 'lucide-react';
+import { CalendarDays, Plus, X } from 'lucide-react';
 import { LeaveItem } from '@/types';
 import { OffItem } from '@/types/off';
 import { formatDate } from '@/lib/date';
 import { updateOff, deleteOff } from '@/services/off';
 import { signOut } from "next-auth/react";
 import { WarningBanner } from './DesktopCalendar';
+import { MESSAGES } from '@/lib/messages';
 
 const handleApiError = (e: any) => {
   if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
@@ -38,6 +39,8 @@ interface MobileScheduleListProps {
   todayMonth: number;
   invalidLeaves: Array<{ name: string; original: string }>;
   sundayLeaves: Array<{ name: string; original: string }>;
+  onLeaveAdd?: () => void;
+  onOffAdd?: () => void;
 }
 
 export default function MobileScheduleList({
@@ -51,7 +54,9 @@ export default function MobileScheduleList({
   formatDate,
   todayMonth,
   invalidLeaves,
-  sundayLeaves
+  sundayLeaves,
+  onLeaveAdd,
+  onOffAdd
 }: MobileScheduleListProps) {
   type CombinedItem = {
     name: string;
@@ -97,48 +102,66 @@ export default function MobileScheduleList({
       if (y && m && d) displayDate = `${parseInt(m, 10)}/${parseInt(d, 10)}`;
     } catch(e) {}
 
-    const newDateInput = prompt(`오프 날짜를 수정하세요 (M/D 형식):
-예: 1/15`, displayDate);
+    const newDateInput = prompt(MESSAGES.off.edit.mobilePrompt, displayDate);
     
     if (!newDateInput || newDateInput === displayDate) return;
 
     const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])$/;
     if (!datePattern.test(newDateInput.trim())) {
-      alert(`올바른 날짜 형식으로 입력해주세요. (M/D)
-예: 1/15`);
+      alert(MESSAGES.validation.invalidOffDate);
       return;
     }
       
     try {
       await updateOff(name, date, newDateInput.trim(), memo);
-      alert('오프가 수정되었습니다.');
+      alert(MESSAGES.off.edit.success);
       onRefresh();
     } catch (error: any) {
       if (!handleApiError(error)) {
-        alert(error.message || '오프 수정에 실패했습니다.');
+        alert(MESSAGES.off.edit.failure(error.message));
       }
     }
   };
 
   const handleOffDelete = async (name: string, date: string) => {
     if (!session?.isAdmin) return;
-    if (!confirm(`${name}의 ${date} 오프를 삭제하시겠습니까?`)) return;
+    if (!confirm(MESSAGES.off.delete.confirm(name, date))) return;
 
     try {
       await deleteOff(name, date);
-      alert('오프가 삭제되었습니다.');
+      alert(MESSAGES.off.delete.success);
       onRefresh();
     } catch (error: any) {
       if (!handleApiError(error)) {
-        alert(error.message || '오프 삭제에 실패했습니다.');
+        alert(MESSAGES.off.delete.failure(error.message));
       }
     }
   };
 
   return (
     <div className="bg-white dark:bg-[#1E1E1E] p-5 rounded-2xl shadow-sm border border-[#F0EAE4] dark:border-[#333333] mb-6 transition-colors duration-300">
-      <h3 className="text-[#5C5552] dark:text-[#E0E0E0] font-bold mb-4 flex items-center gap-2 text-lg">
-        <CalendarDays className="w-5 h-5 text-[#8D7B68] dark:text-[#A4907C]"/> {todayMonth}월 일정
+      <h3 className="text-[#5C5552] dark:text-[#E0E0E0] font-bold mb-4 flex items-center justify-between text-lg">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-5 h-5 text-[#8D7B68] dark:text-[#A4907C]"/> {todayMonth}월 일정
+        </div>
+        {session?.isAdmin && (
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={onOffAdd}
+              className="px-1 py-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 dark:text-blue-400 text-[10px] font-bold leading-none border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all"
+              title="오프 추가"
+            >
+              OFF
+            </button>
+            <button 
+              onClick={onLeaveAdd}
+              className="p-0.5 rounded hover:bg-[#EBE5DD] dark:hover:bg-[#3D3D3D] text-[#8D7B68] dark:text-[#A4907C] border border-transparent hover:border-[#D7C8B8] dark:hover:border-[#444444] transition-all"
+              title="연차 추가"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </h3>
       
       <WarningBanner session={session} invalidLeaves={invalidLeaves} sundayLeaves={sundayLeaves} />
