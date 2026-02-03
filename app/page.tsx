@@ -575,9 +575,9 @@ export default function DentalLeaveApp() {
     </div>
 
     <div className="bg-white dark:bg-[#1E1E1E] p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] dark:text-[#E0E0E0] relative rounded-sm print:shadow-none print:w-full print:h-[297mm] print:m-0 print:p-[10mm] print:rounded-none print:border-none print-form-container transition-colors duration-300">
-        <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 print:mb-8 tracking-widest text-[#222] dark:text-[#E0E0E0] font-serif">연차(휴가) 신청서</h2>
+        <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 print:mb-12 tracking-widest text-[#222] dark:text-[#E0E0E0] font-serif">연차(휴가) 신청서</h2>
         
-        <div className="flex justify-end mb-8 print:mb-8">
+        <div className="flex justify-end mb-8 print:mb-12">
             <table className="border border-gray-800 dark:border-gray-500 text-center text-sm w-64">
                 <tbody>
                 <tr>
@@ -595,7 +595,7 @@ export default function DentalLeaveApp() {
             </table>
         </div>
 
-        <table className="w-full border-collapse border border-gray-800 dark:border-gray-500 mb-6 print:mb-8 text-sm">
+        <table className="w-full border-collapse border border-gray-800 dark:border-gray-500 mb-6 print:mb-16 text-sm">
             <tbody>
             <tr>
                 <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 w-28 font-bold text-gray-800 dark:text-[#E0E0E0]">성 명</th>
@@ -648,9 +648,9 @@ export default function DentalLeaveApp() {
             </tbody>
         </table>
         
-        <div className="text-center mt-16 print:mt-12">
-            <p className="text-lg mb-8 print:mb-4 font-medium font-serif text-gray-800 dark:text-[#E0E0E0]">2026년 &nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;일</p>
-            <div className="flex justify-center items-center gap-4 mb-16 print:mb-12">
+        <div className="text-center mt-16 print:mt-24">
+            <p className="text-lg mb-8 print:mb-16 font-medium font-serif text-gray-800 dark:text-[#E0E0E0]">2026년 &nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;일</p>
+            <div className="flex justify-center items-center gap-4 mb-16 print:mb-20">
                 <span className="text-lg font-bold font-serif text-gray-800 dark:text-[#E0E0E0]">신 청 인 :</span>
                 <input type="text" className="text-xl text-center border-b border-gray-800 dark:border-gray-500 w-32 outline-none font-serif bg-transparent" />
                 <span className="text-lg font-bold font-serif text-gray-800 dark:text-[#E0E0E0]">(인)</span>
