@@ -45,29 +45,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const newData: StaffData = req.body;
       
-      // [변경] 요약 시트에 들어갈 데이터를 두 부분으로 분리하여 업데이트
-      // 목적: D열(Total)에 있는 사용자의 엑셀 수식을 보존하기 위함
-      // Part 1: A, B, C열 (이름, 직급, 입사일)
+      // [변경] E열(사용연차)을 보호하기 위해 업데이트 로직 수정
+      // 목적: E열에 있는 엑셀 수식(COUNTIF 등)을 보존
+      
+      // Part 1: A, B, C, D열 (이름, 직급, 입사일, 발생연차)
       const rowsPart1 = newData.map(item => [
-        item.name, item.role, item.date
+        item.name, item.role, item.date, item.total
       ]);
       
-      // Part 2: E, F열 (사용일수, 비고) - D열(Total) 건너뜀
+      // Part 2: F열 (비고) - E열(사용연차) 건너뜀
       const rowsPart2 = newData.map(item => [
-        item.used, item.memo
+        item.memo
       ]);
 
-      // 1. 기존 데이터 지우기 (D열 제외)
-      // A2:C15 (이름~입사일) 및 E2:F15 (사용~비고) 초기화
-      // batchClear 사용
+      // 1. 기존 데이터 지우기 (E열 제외)
+      // A2:D15 및 F2:F15 초기화
       await sheets.spreadsheets.values.batchClear({
         spreadsheetId,
         requestBody: {
-          ranges: [`${SHEET_SUMMARY}!A2:C15`, `${SHEET_SUMMARY}!E2:F15`]
+          ranges: [`${SHEET_SUMMARY}!A2:D15`, `${SHEET_SUMMARY}!F2:F15`]
         }
       });
 
-      // 2. 새 데이터 쓰기 (D열 건너뛰고 A~C, E~F 업데이트)
+      // 2. 새 데이터 쓰기 (E열 건너뛰고 A~D, F 업데이트)
       await sheets.spreadsheets.values.batchUpdate({
         spreadsheetId,
         requestBody: {
@@ -78,7 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               values: rowsPart1
             },
             {
-              range: `${SHEET_SUMMARY}!E2`,
+              range: `${SHEET_SUMMARY}!F2`,
               values: rowsPart2
             }
           ]
