@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Printer, Plus, Calendar, User, FileText, 
-  Trash2, Moon, Sun
+  Trash2, Moon, Sun, PanelRightOpen, PanelRightClose
 } from 'lucide-react';
 
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -20,9 +20,21 @@ export default function DentalLeaveApp() {
   const { data: session, status } = useSession();
   const { theme: currentTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const loadingSession = status === "loading";
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebarOpen');
+    if (saved !== null) setIsSidebarOpen(saved === 'true');
+  }, []);
+
+  const toggleSidebar = () => {
+    const newState = !isSidebarOpen;
+    setIsSidebarOpen(newState);
+    localStorage.setItem('sidebarOpen', String(newState));
+  };
 
   const [activeTab, setActiveTab] = useState('list');
   const [viewDate, setViewDate] = useState(new Date());
@@ -431,6 +443,14 @@ export default function DentalLeaveApp() {
                 >
                   {mounted && currentTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
+
+                <button 
+                  onClick={toggleSidebar}
+                  className={`ml-2 p-2.5 rounded-full transition shadow-sm ${!isSidebarOpen ? 'bg-[#7A6A59] dark:bg-[#4A3B2F] text-white' : 'bg-[#FDFBF7] dark:bg-[#2C2C2C] text-[#8D7B68] dark:text-[#A4907C]'}`}
+                  title={isSidebarOpen ? "가이드 숨기기" : "가이드 보기"}
+                >
+                  {isSidebarOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+                </button>
                 
                  <UserMenu 
                    session={session as any} 
@@ -444,7 +464,7 @@ export default function DentalLeaveApp() {
            <div className="p-4 md:p-8 bg-[#FDFBF7] dark:bg-[#121212] h-full transition-colors duration-300">
              <div className="w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
                  
-                 <div className="lg:col-span-9">
+                 <div className={`transition-all duration-300 ${isSidebarOpen ? 'lg:col-span-9' : 'lg:col-span-12'}`}>
                       <div className="md:hidden mb-6">
                          <div className="mb-4">
                            <TodayStatusCard 
@@ -537,9 +557,11 @@ export default function DentalLeaveApp() {
                      </div>
                  </div>
 
-                 <div className="hidden lg:block lg:col-span-3">
-                     <HelpPanel />
-                 </div>
+                 {isSidebarOpen && (
+                   <div className="hidden lg:block lg:col-span-3">
+                       <HelpPanel />
+                   </div>
+                 )}
              </div>
            </div>
          )}
@@ -553,9 +575,9 @@ export default function DentalLeaveApp() {
     </div>
 
     <div className="bg-white dark:bg-[#1E1E1E] p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] dark:text-[#E0E0E0] relative rounded-sm print:shadow-none print:w-full print:h-[297mm] print:m-0 print:p-[10mm] print:rounded-none print:border-none print-form-container transition-colors duration-300">
-        <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 print:mb-6 tracking-widest text-[#222] dark:text-[#E0E0E0] font-serif">연차(휴가) 신청서</h2>
+        <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 print:mb-8 tracking-widest text-[#222] dark:text-[#E0E0E0] font-serif">연차(휴가) 신청서</h2>
         
-        <div className="flex justify-end mb-8 print:mb-4">
+        <div className="flex justify-end mb-8 print:mb-8">
             <table className="border border-gray-800 dark:border-gray-500 text-center text-sm w-64">
                 <tbody>
                 <tr>
@@ -573,7 +595,7 @@ export default function DentalLeaveApp() {
             </table>
         </div>
 
-        <table className="w-full border-collapse border border-gray-800 dark:border-gray-500 mb-6 print:mb-4 text-sm">
+        <table className="w-full border-collapse border border-gray-800 dark:border-gray-500 mb-6 print:mb-8 text-sm">
             <tbody>
             <tr>
                 <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 w-28 font-bold text-gray-800 dark:text-[#E0E0E0]">성 명</th>
@@ -626,9 +648,9 @@ export default function DentalLeaveApp() {
             </tbody>
         </table>
         
-        <div className="text-center mt-16 print:mt-8">
+        <div className="text-center mt-16 print:mt-12">
             <p className="text-lg mb-8 print:mb-4 font-medium font-serif text-gray-800 dark:text-[#E0E0E0]">2026년 &nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;일</p>
-            <div className="flex justify-center items-center gap-4 mb-16 print:mb-8">
+            <div className="flex justify-center items-center gap-4 mb-16 print:mb-12">
                 <span className="text-lg font-bold font-serif text-gray-800 dark:text-[#E0E0E0]">신 청 인 :</span>
                 <input type="text" className="text-xl text-center border-b border-gray-800 dark:border-gray-500 w-32 outline-none font-serif bg-transparent" />
                 <span className="text-lg font-bold font-serif text-gray-800 dark:text-[#E0E0E0]">(인)</span>

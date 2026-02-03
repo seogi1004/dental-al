@@ -1,44 +1,17 @@
 'use client';
 
-import { FileText, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { FileText } from 'lucide-react';
 
 export default function HelpPanel() {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  useEffect(() => {
-    const savedState = localStorage.getItem('helpPanelExpanded');
-    if (savedState !== null) {
-      setIsExpanded(savedState === 'true');
-    }
-  }, []);
-
-  const toggleExpand = () => {
-    const newState = !isExpanded;
-    setIsExpanded(newState);
-    localStorage.setItem('helpPanelExpanded', String(newState));
-  };
-
   return (
     <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-2xl shadow-sm border border-[#F0EAE4] dark:border-[#333333] sticky top-6 h-fit transition-colors duration-300">
-      <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={toggleExpand}>
+      <div className="flex justify-between items-center mb-4">
         <h3 className="font-bold text-lg text-[#5C5552] dark:text-[#E0E0E0] flex items-center gap-2">
           💡 사용 가이드
         </h3>
-        <button 
-          className="p-1 hover:bg-[#F0EAE4] dark:hover:bg-[#333333] rounded-lg transition-colors"
-          aria-label={isExpanded ? '접기' : '펼치기'}
-        >
-          {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-[#8D7B68] dark:text-[#A4907C]" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-[#8D7B68] dark:text-[#A4907C]" />
-          )}
-        </button>
       </div>
       
-      {isExpanded && (
-        <div className="space-y-6 text-sm text-[#5C5552] dark:text-[#A0A0A0]">
+      <div className="space-y-6 text-sm text-[#5C5552] dark:text-[#A0A0A0]">
         
           <div>
             <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2 flex items-center gap-2">
@@ -142,7 +115,6 @@ export default function HelpPanel() {
             <FileText className="w-4 h-4" /> 구글 시트 바로가기
           </a>
         </div>
-      )}
     </div>
   );
 }
