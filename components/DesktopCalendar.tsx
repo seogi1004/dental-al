@@ -2,7 +2,7 @@
 
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { Staff } from '@/types';
-import { parseLeaveDate, isValidDate } from '@/lib/date';
+import { parseLeaveDate, isValidDate, formatDate } from '@/lib/date';
 import { addOff, updateOff, deleteOff } from '@/services/off';
 import { signOut } from "next-auth/react";
 
@@ -19,7 +19,7 @@ export interface WarningBannerProps {
     isAdmin: boolean;
   } | null;
   invalidLeaves: Array<{ name: string; original: string }>;
-  sundayLeaves: Array<{ name: string; original: string }>;
+  sundayLeaves: Array<{ name: string; original: string; date?: string }>; // date 추가
   className?: string;
 }
 
@@ -52,7 +52,7 @@ export const WarningBanner = ({ session, invalidLeaves, sundayLeaves, className 
               <ul className="text-xs space-y-1 mb-2">
                 {sundayLeaves.slice(0, 5).map((item, idx) => (
                   <li key={idx}>
-                    • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded text-[10px]">"{item.original}"</code>
+                    • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded text-[10px]">"{item.date ? formatDate(item.date) : item.original}"</code>
                   </li>
                 ))}
                 {sundayLeaves.length > 5 && (
