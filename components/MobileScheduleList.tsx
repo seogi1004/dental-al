@@ -6,6 +6,7 @@ import { OffItem } from '@/types/off';
 import { formatDate } from '@/lib/date';
 import { updateOff, deleteOff } from '@/services/off';
 import { signOut } from "next-auth/react";
+import { WarningBanner } from './DesktopCalendar';
 
 const handleApiError = (e: any) => {
   if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
@@ -19,75 +20,6 @@ interface WarningBannerProps {
   session: {
     isAdmin: boolean;
   } | null;
-  invalidLeaves: Array<{ name: string; original: string }>;
-  sundayLeaves: Array<{ name: string; original: string }>;
-}
-
-const WarningBanner = ({ session, invalidLeaves, sundayLeaves }: WarningBannerProps) => {
-  if (!session?.isAdmin || (invalidLeaves.length === 0 && sundayLeaves.length === 0)) return null;
-
-  return (
-    <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl">
-      <div className="flex items-start gap-3 text-amber-800 dark:text-amber-300">
-        <span className="text-xl shrink-0">⚠️</span>
-        <div className="flex-1">
-          {invalidLeaves.length > 0 && (
-            <div className="mb-3">
-              <p className="font-bold text-sm mb-2">잘못된 날짜 형식이 감지되었습니다</p>
-              <ul className="text-xs space-y-1 mb-2">
-                {invalidLeaves.slice(0, 5).map((item, idx) => (
-                  <li key={idx}>
-                    • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-[10px]">"{item.original}"</code>
-                  </li>
-                ))}
-                {invalidLeaves.length > 5 && (
-                  <li className="opacity-70">... 외 {invalidLeaves.length - 5}건</li>
-                )}
-              </ul>
-            </div>
-          )}
-          {sundayLeaves.length > 0 && (
-            <div>
-              <p className="font-bold text-sm mb-2">일요일 연차가 감지되었습니다</p>
-              <ul className="text-xs space-y-1 mb-2">
-                {sundayLeaves.slice(0, 5).map((item, idx) => (
-                  <li key={idx}>
-                    • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded text-[10px]">"{item.original}"</code>
-                  </li>
-                ))}
-                {sundayLeaves.length > 5 && (
-                  <li className="opacity-70">... 외 {sundayLeaves.length - 5}건</li>
-                )}
-              </ul>
-            </div>
-          )}
-          <p className="text-xs opacity-80">💡 항목을 클릭하여 수정하거나 삭제할 수 있습니다.</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface MobileScheduleListProps {
-  leaves: Array<{
-    name: string;
-    role: string;
-    date: string;
-    original: string;
-    type: 'AM' | 'PM' | 'FULL';
-    isDuplicate?: boolean;
-    warning?: string | null;
-  }>;
-  monthOffs: OffItem[];
-  onLeaveClick: (name: string, original: string, date: string) => void;
-  onLeaveDelete: (name: string, original: string) => void;
-  onRefresh: () => void;
-  session: {
-    isAdmin: boolean;
-  } | null;
-  getTodayString: () => string;
-  formatDate: (dateStr: string) => string;
-  todayMonth: number;
   invalidLeaves: Array<{ name: string; original: string }>;
   sundayLeaves: Array<{ name: string; original: string }>;
 }
