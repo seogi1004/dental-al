@@ -672,7 +672,10 @@ export default function DentalLeaveApp() {
                             <>
                                 <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4 print:gap-2">
                                     <div className={isSameDay ? 'print:col-span-2' : ''}>
-                                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium print:text-[10px]">시작일</div>
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium print:text-[10px]">
+                                            <span className={isSameDay ? 'print:hidden' : ''}>시작일</span>
+                                            <span className={`hidden ${isSameDay ? 'print:inline' : ''}`}>신청일</span>
+                                        </div>
                                         <input 
                                             type="date" 
                                             value={formStartDate} 
