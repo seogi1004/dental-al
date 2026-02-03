@@ -168,8 +168,33 @@ export default function DentalLeaveApp() {
     return invalidList;
   }, [staffData]);
 
+  // 일요일 휴가 데이터 추출
+  const getSundayLeaves = useCallback(() => {
+    const sundayList = [];
+    staffData.forEach(staff => {
+      if (staff.leaves) {
+        staff.leaves.forEach(leafObj => {
+          const { date } = parseLeaveDate(leafObj.parsed);
+          if (date && isValidDate(date)) {
+            const d = new Date(date);
+            if (d.getDay() === 0) { // 0 = Sunday
+              sundayList.push({
+                name: staff.name,
+                original: leafObj.original,
+                date: date,
+                reason: '일요일에 연차가 등록되었습니다.'
+              });
+            }
+          }
+        });
+      }
+    });
+    return sundayList;
+  }, [staffData]);
+
   // 잘못된 데이터 계산
   const invalidLeaves = getInvalidLeaves();
+  const sundayLeaves = getSundayLeaves();
 
   // ==================================================================================
   // API 통신 함수
@@ -652,6 +677,8 @@ export default function DentalLeaveApp() {
     const getLeavesForDay = (day) => {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const list = [];
+      const currentDayObj = new Date(year, month, day);
+      const isSunday = currentDayObj.getDay() === 0;
       
       staffData.forEach(staff => {
         if (staff.leaves) {
@@ -679,9 +706,12 @@ export default function DentalLeaveApp() {
       return list.map(item => ({
         ...item,
         isDuplicate: nameCounts[item.name] > 1,
+        isSunday: isSunday,
         warning: nameCounts[item.name] > 1 
           ? `${item.name}님이 이 날짜에 ${nameCounts[item.name]}번 등록되어 있습니다.` 
-          : null
+          : isSunday
+            ? "일요일에 연차가 등록되었습니다."
+            : null
       }));
     };
 
@@ -704,23 +734,42 @@ export default function DentalLeaveApp() {
             </div>
         </div>
 
-        {session?.isAdmin && invalidLeaves.length > 0 && (
+        {session?.isAdmin && (invalidLeaves.length > 0 || sundayLeaves.length > 0) && (
           <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl">
             <div className="flex items-start gap-3 text-amber-800 dark:text-amber-300">
               <span className="text-xl shrink-0">⚠️</span>
               <div className="flex-1">
-                <p className="font-bold text-sm mb-2">잘못된 날짜 형식이 감지되었습니다</p>
-                <ul className="text-xs space-y-1 mb-2">
-                  {invalidLeaves.slice(0, 5).map((item, idx) => (
-                    <li key={idx}>
-                      • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-[10px]">"{item.original}"</code>
-                    </li>
-                  ))}
-                  {invalidLeaves.length > 5 && (
-                    <li className="opacity-70">... 외 {invalidLeaves.length - 5}건</li>
-                  )}
-                </ul>
-                <p className="text-xs opacity-80">💡 구글 시트에서 해당 데이터를 수정해주세요. (형식: 01/15, 01/15 AM, 01/15 PM)</p>
+                {invalidLeaves.length > 0 && (
+                  <div className="mb-3">
+                    <p className="font-bold text-sm mb-2">잘못된 날짜 형식이 감지되었습니다</p>
+                    <ul className="text-xs space-y-1 mb-2">
+                      {invalidLeaves.slice(0, 5).map((item, idx) => (
+                        <li key={idx}>
+                          • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-[10px]">"{item.original}"</code>
+                        </li>
+                      ))}
+                      {invalidLeaves.length > 5 && (
+                        <li className="opacity-70">... 외 {invalidLeaves.length - 5}건</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                {sundayLeaves.length > 0 && (
+                  <div>
+                    <p className="font-bold text-sm mb-2">일요일 연차가 감지되었습니다</p>
+                    <ul className="text-xs space-y-1 mb-2">
+                      {sundayLeaves.slice(0, 5).map((item, idx) => (
+                        <li key={idx}>
+                          • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded text-[10px]">"{item.original}"</code>
+                        </li>
+                      ))}
+                      {sundayLeaves.length > 5 && (
+                        <li className="opacity-70">... 외 {sundayLeaves.length - 5}건</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                <p className="text-xs opacity-80">💡 구글 시트에서 해당 데이터를 수정해주세요. {invalidLeaves.length > 0 && '(형식: 01/15, 01/15 AM, 01/15 PM)'}</p>
               </div>
             </div>
           </div>
@@ -772,7 +821,9 @@ export default function DentalLeaveApp() {
                                      className={`text-xs px-1.5 py-0.5 rounded border flex items-center justify-between group/item cursor-pointer transition-colors
                                        ${person.isDuplicate
                                          ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
-                                         : 'bg-[#F2EBE5] dark:bg-[#2D2D2D] text-[#5C5552] dark:text-[#E0E0E0] border-[#EBE5DD] dark:border-[#444444] hover:bg-[#EBE5DD] dark:hover:bg-[#3D3D3D]'
+                                         : person.isSunday
+                                           ? 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-200'
+                                           : 'bg-[#F2EBE5] dark:bg-[#2D2D2D] text-[#5C5552] dark:text-[#E0E0E0] border-[#EBE5DD] dark:border-[#444444] hover:bg-[#EBE5DD] dark:hover:bg-[#3D3D3D]'
                                        }`}
                                 >
                                     <div 
@@ -969,7 +1020,7 @@ export default function DentalLeaveApp() {
                                 <TodayStatusCard />
                             </div>
                             <div className="col-span-2">
-                                 {invalidLeaves.length > 0 ? (
+                                 {invalidLeaves.length > 0 || sundayLeaves.length > 0 ? (
                                     <div className="h-full bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-700 p-5 flex items-center justify-center transition-colors">
                                         <p className="text-amber-800 dark:text-amber-300 font-medium text-center">
                                             ⚠️ 스프레드시트 확인이 필요합니다
