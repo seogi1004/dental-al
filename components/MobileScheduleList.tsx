@@ -8,6 +8,7 @@ import { updateOff, deleteOff } from '@/services/off';
 import { signOut } from "next-auth/react";
 import { WarningBanner } from './DesktopCalendar';
 import { MESSAGES } from '@/lib/messages';
+import { useState, useEffect } from 'react';
 
 const handleApiError = (e: any) => {
   if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
@@ -60,6 +61,21 @@ export default function MobileScheduleList({
   onOffAdd,
   isAdmin = false
 }: MobileScheduleListProps) {
+  const [showPastItems, setShowPastItems] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('showPastItems');
+    if (saved !== null) {
+      setShowPastItems(saved === 'true');
+    }
+  }, []);
+
+  const handleTogglePastItems = () => {
+    const newValue = !showPastItems;
+    setShowPastItems(newValue);
+    localStorage.setItem('showPastItems', String(newValue));
+  };
+
   type CombinedItem = {
     name: string;
     role?: string;
@@ -73,6 +89,8 @@ export default function MobileScheduleList({
     memo?: string;
   };
 
+  const today = getTodayString();
+  
   const combinedList: CombinedItem[] = [
     ...leaves.map(item => ({
       ...item,
@@ -89,7 +107,9 @@ export default function MobileScheduleList({
       listType: 'OFF' as const,
       memo: item.memo
     }))
-  ].sort((a, b) => {
+  ]
+  .filter(item => showPastItems ? true : item.date >= today)
+  .sort((a, b) => {
     const dateCompare = a.dateObj.getTime() - b.dateObj.getTime();
     if (dateCompare !== 0) return dateCompare;
     return a.listType === 'LEAVE' ? -1 : 1;
@@ -165,6 +185,24 @@ export default function MobileScheduleList({
           </div>
         )}
       </h3>
+
+      <div className="mb-4">
+        <label className="flex items-center gap-2.5 cursor-pointer select-none group w-fit">
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={showPastItems}
+              onChange={handleTogglePastItems}
+              className="sr-only peer"
+            />
+            <div className="w-10 h-5 bg-gray-200 dark:bg-gray-700 rounded-full peer transition-colors peer-checked:bg-[#8D7B68] dark:peer-checked:bg-[#A4907C] peer-focus:ring-2 peer-focus:ring-[#8D7B68]/20 dark:peer-focus:ring-[#A4907C]/20"></div>
+            <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow-sm"></div>
+          </div>
+          <span className="text-sm font-medium text-[#5C5552] dark:text-[#E0E0E0] group-hover:text-[#8D7B68] dark:group-hover:text-[#A4907C] transition-colors">
+            지난 일정 보기
+          </span>
+        </label>
+      </div>
       
       <WarningBanner session={session} invalidLeaves={invalidLeaves} sundayLeaves={sundayLeaves} />
       
@@ -175,44 +213,42 @@ export default function MobileScheduleList({
       ) : (
         <div className="space-y-3">
           {combinedList.map((item, idx) => {
-            const isPast = item.date < getTodayString();
             const isOff = item.listType === 'OFF';
+            const isPast = item.date < today;
             
-            const containerClass = isOff
-              ? isPast
-                ? 'bg-gray-100 dark:bg-gray-900/20 opacity-60 border border-gray-300 dark:border-gray-700'
-                : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
-              : item.isDuplicate 
-                ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700' 
-                : isPast 
-                  ? 'bg-[#F5F5F5] dark:bg-[#2A2A2A] opacity-60' 
+            const containerClass = isPast
+              ? 'bg-gray-100 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 opacity-60'
+              : isOff
+                ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                : item.isDuplicate 
+                  ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700' 
                   : 'bg-[#FDFBF7] dark:bg-[#121212] border border-[#EBE5DD] dark:border-[#444444]';
 
-            const dateTextClass = isOff
-              ? isPast
-                ? 'text-gray-500 dark:text-gray-400'
-                : 'text-blue-700 dark:text-blue-300'
-              : item.isDuplicate 
-                ? 'text-red-700 dark:text-red-300' 
-                : isPast 
-                  ? 'text-gray-500 dark:text-gray-400' 
+            const dateTextClass = isPast
+              ? 'text-gray-500 dark:text-gray-400'
+              : isOff
+                ? 'text-blue-700 dark:text-blue-300'
+                : item.isDuplicate 
+                  ? 'text-red-700 dark:text-red-300' 
                   : 'text-[#8D7B68] dark:text-[#A4907C]';
 
-            const nameTextClass = isOff
-              ? isPast
-                ? 'text-gray-600 dark:text-gray-400'
-                : 'text-blue-800 dark:text-blue-200'
-              : item.isDuplicate 
-                ? 'text-red-700 dark:text-red-300' 
-                : 'text-[#5C5552] dark:text-[#E0E0E0]';
+            const nameTextClass = isPast
+              ? 'text-gray-500 dark:text-gray-400'
+              : isOff
+                ? 'text-blue-800 dark:text-blue-200'
+                : item.isDuplicate 
+                  ? 'text-red-700 dark:text-red-300' 
+                  : 'text-[#5C5552] dark:text-[#E0E0E0]';
 
-            const badgeColor = item.type === 'AM' 
-              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200' 
-              : item.type === 'PM' 
-                ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200' 
-                : item.type === 'OFF'
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-                  : 'bg-[#EBE5DD] dark:bg-[#2C2C2C] text-[#8D7B68] dark:text-[#A4907C]';
+            const badgeColor = isPast
+              ? 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+              : item.type === 'AM' 
+                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200' 
+                : item.type === 'PM' 
+                  ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200' 
+                  : item.type === 'OFF'
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
+                    : 'bg-[#EBE5DD] dark:bg-[#2C2C2C] text-[#8D7B68] dark:text-[#A4907C]';
             
               return (
                 <div key={`${item.listType}-${idx}`} 
@@ -231,7 +267,7 @@ export default function MobileScheduleList({
                     <span className={`text-sm font-bold ${dateTextClass}`}>
                     {formatDate(item.date)}
                   </span>
-                  <div className={`h-4 w-[1px] ${isOff ? 'bg-blue-200 dark:bg-blue-700' : 'bg-[#EBE5DD] dark:bg-[#444444]'}`}></div>
+                  <div className={`h-4 w-[1px] ${isPast ? 'bg-gray-300 dark:bg-gray-600' : isOff ? 'bg-blue-200 dark:bg-blue-700' : 'bg-[#EBE5DD] dark:bg-[#444444]'}`}></div>
                   <span className={`font-medium ${nameTextClass}`}>{item.name}</span>
                   {item.type === 'OFF' ? (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${badgeColor}`}>OFF</span>
