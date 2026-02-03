@@ -495,6 +495,7 @@ export default function DentalLeaveApp() {
   // 컴포넌트: 대시보드 위젯
   // ==================================================================================
   
+
   // 5. 유저 메뉴 (프로필 드롭다운)
   const UserMenu = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -551,6 +552,52 @@ export default function DentalLeaveApp() {
                 </>
             )}
         </div>
+    );
+  };
+
+  // Warning Banner Component
+  const WarningBanner = () => {
+    if (!session?.isAdmin || (invalidLeaves.length === 0 && sundayLeaves.length === 0)) return null;
+
+    return (
+      <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl">
+        <div className="flex items-start gap-3 text-amber-800 dark:text-amber-300">
+          <span className="text-xl shrink-0">⚠️</span>
+          <div className="flex-1">
+            {invalidLeaves.length > 0 && (
+              <div className="mb-3">
+                <p className="font-bold text-sm mb-2">잘못된 날짜 형식이 감지되었습니다</p>
+                <ul className="text-xs space-y-1 mb-2">
+                  {invalidLeaves.slice(0, 5).map((item, idx) => (
+                    <li key={idx}>
+                      • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-[10px]">"{item.original}"</code>
+                    </li>
+                  ))}
+                  {invalidLeaves.length > 5 && (
+                    <li className="opacity-70">... 외 {invalidLeaves.length - 5}건</li>
+                  )}
+                </ul>
+              </div>
+            )}
+            {sundayLeaves.length > 0 && (
+              <div>
+                <p className="font-bold text-sm mb-2">일요일 연차가 감지되었습니다</p>
+                <ul className="text-xs space-y-1 mb-2">
+                  {sundayLeaves.slice(0, 5).map((item, idx) => (
+                    <li key={idx}>
+                      • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded text-[10px]">"{item.original}"</code>
+                    </li>
+                  ))}
+                  {sundayLeaves.length > 5 && (
+                    <li className="opacity-70">... 외 {sundayLeaves.length - 5}건</li>
+                  )}
+                </ul>
+              </div>
+            )}
+            <p className="text-xs opacity-80">💡 항목을 클릭하여 수정하거나 삭제할 수 있습니다.</p>
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -612,6 +659,8 @@ export default function DentalLeaveApp() {
         <h3 className="text-[#5C5552] dark:text-[#E0E0E0] font-bold mb-4 flex items-center gap-2 text-lg">
           <CalendarDays className="w-5 h-5 text-[#8D7B68] dark:text-[#A4907C]"/> {todayMonth}월 연차 일정
         </h3>
+        
+        <WarningBanner />
         
         {leaves.length === 0 ? (
           <div className="text-center py-6 text-[#A4907C] dark:text-[#8D7B68] text-sm bg-[#FDFBF7] dark:bg-[#121212] rounded-xl transition-colors duration-300">
@@ -752,46 +801,7 @@ export default function DentalLeaveApp() {
             </div>
         </div>
 
-        {session?.isAdmin && (invalidLeaves.length > 0 || sundayLeaves.length > 0) && (
-          <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl">
-            <div className="flex items-start gap-3 text-amber-800 dark:text-amber-300">
-              <span className="text-xl shrink-0">⚠️</span>
-              <div className="flex-1">
-                {invalidLeaves.length > 0 && (
-                  <div className="mb-3">
-                    <p className="font-bold text-sm mb-2">잘못된 날짜 형식이 감지되었습니다</p>
-                    <ul className="text-xs space-y-1 mb-2">
-                      {invalidLeaves.slice(0, 5).map((item, idx) => (
-                        <li key={idx}>
-                          • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-[10px]">"{item.original}"</code>
-                        </li>
-                      ))}
-                      {invalidLeaves.length > 5 && (
-                        <li className="opacity-70">... 외 {invalidLeaves.length - 5}건</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-                {sundayLeaves.length > 0 && (
-                  <div>
-                    <p className="font-bold text-sm mb-2">일요일 연차가 감지되었습니다</p>
-                    <ul className="text-xs space-y-1 mb-2">
-                      {sundayLeaves.slice(0, 5).map((item, idx) => (
-                        <li key={idx}>
-                          • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded text-[10px]">"{item.original}"</code>
-                        </li>
-                      ))}
-                      {sundayLeaves.length > 5 && (
-                        <li className="opacity-70">... 외 {sundayLeaves.length - 5}건</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-                <p className="text-xs opacity-80">💡 항목을 클릭하여 수정하거나 삭제할 수 있습니다.</p>
-              </div>
-            </div>
-          </div>
-        )}
+        <WarningBanner />
 
         {/* 달력 그리드 */}
         <div className="grid grid-cols-7 border-t border-l border-[#F0EAE4] dark:border-[#333333]">
