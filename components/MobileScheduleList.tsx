@@ -146,18 +146,18 @@ export default function MobileScheduleList({
     let displayDate = date;
     try {
       const [y, m, d] = date.split('-');
-      if (y && m && d) displayDate = `${m}/${d}`;
+      if (y && m && d) displayDate = `${parseInt(m, 10)}/${parseInt(d, 10)}`;
     } catch(e) {}
 
-    const newDateInput = prompt(`오프 날짜를 수정하세요 (MM/DD 형식):
-예: 01/15`, displayDate);
+    const newDateInput = prompt(`오프 날짜를 수정하세요 (M/D 형식):
+예: 1/15`, displayDate);
     
     if (!newDateInput || newDateInput === displayDate) return;
 
     const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])$/;
     if (!datePattern.test(newDateInput.trim())) {
-      alert(`올바른 날짜 형식으로 입력해주세요. (MM/DD)
-예: 01/15`);
+      alert(`올바른 날짜 형식으로 입력해주세요. (M/D)
+예: 1/15`);
       return;
     }
       
