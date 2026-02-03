@@ -333,7 +333,7 @@ export default function DentalLeaveApp() {
         body: JSON.stringify({ name: staffName, oldDate: originalDate, newDate: newValue.trim() })
       });
       if (!res.ok) throw new Error("수정 실패");
-      alert("수정되었습니다.");
+      setStatusMsg("수정 완료");
       fetchSheetData();
     } catch (e) {
       console.error(e);
@@ -365,7 +365,7 @@ export default function DentalLeaveApp() {
         body: JSON.stringify({ name: staffName, date: originalDate })
       });
       if (!res.ok) throw new Error("삭제 실패");
-      alert("삭제되었습니다.");
+      setStatusMsg("삭제 완료");
       fetchSheetData();
     } catch (e) {
       console.error(e);
@@ -437,7 +437,7 @@ export default function DentalLeaveApp() {
         const data = await res.json();
         throw new Error(data.error || "추가 실패");
       }
-      alert("연차가 추가되었습니다.");
+      setStatusMsg("추가 완료");
       fetchSheetData();
     } catch (e) {
       console.error(e);
