@@ -228,33 +228,39 @@ export default function DentalLeaveApp() {
       return;
     }
     
+    // 모바일: 날짜는 오늘로 고정
     const today = new Date();
-    const defaultDate = `${today.getMonth() + 1}/${today.getDate()}`;
-    const dateInput = prompt(`연차 날짜를 입력하세요 (M/D 형식):\n예: 1/15, 1/15 AM, 1/15 PM`, defaultDate);
-    if (!dateInput) return;
+    const mm = String(today.getMonth() + 1);
+    const dd = String(today.getDate());
+    const baseDate = `${mm}/${dd}`;
     
-    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM))?$/i;
-    if (!datePattern.test(dateInput.trim())) {
-      alert(MESSAGES.validation.invalidDate);
+    // 타입 선택 (종일/오전/오후)
+    const typeInput = prompt(MESSAGES.leave.add.typePrompt, "");
+    if (typeInput === null) return;
+    
+    let typeUpper = typeInput.trim().toUpperCase();
+    if (typeUpper === 'A') typeUpper = 'AM';
+    if (typeUpper === 'P') typeUpper = 'PM';
+    
+    if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
+      alert(MESSAGES.validation.invalidType);
+      return;
+    }
+
+    const existingLeave = staff.leaves?.find(leafObj => {
+      const { date } = parseLeaveDate(leafObj.parsed);
+      // 오늘 날짜와 비교 (M-D 포맷 매칭이 필요할 수 있음. parseLeaveDate는 YYYY-MM-DD 반환)
+      // 간단히:
+      const todayYMD = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+      return date === todayYMD;
+    });
+    
+    if (existingLeave) {
+      alert(MESSAGES.leave.add.alreadyExists(staff.name, existingLeave.original));
       return;
     }
     
-    let finalDate = dateInput.trim();
-    if (!finalDate.toUpperCase().includes('AM') && !finalDate.toUpperCase().includes('PM')) {
-      const typeInput = prompt(MESSAGES.leave.add.typePrompt, "");
-      if (typeInput === null) return;
-      
-      let typeUpper = typeInput.trim().toUpperCase();
-      if (typeUpper === 'A') typeUpper = 'AM';
-      if (typeUpper === 'P') typeUpper = 'PM';
-      
-      if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
-        alert(MESSAGES.validation.invalidType);
-        return;
-      }
-      
-      if (typeUpper) finalDate = `${finalDate} ${typeUpper}`;
-    }
+    const finalDate = typeUpper ? `${baseDate} ${typeUpper}` : baseDate;
     
     try {
       await addLeave(staff.name, finalDate);
@@ -282,19 +288,14 @@ export default function DentalLeaveApp() {
       return;
     }
     
+    // 모바일: 날짜는 오늘로 고정
     const today = new Date();
-    const defaultDate = `${today.getMonth() + 1}/${today.getDate()}`;
-    const dateInput = prompt(`오프 날짜를 입력하세요 (M/D 형식):\n예: 1/15`, defaultDate);
-    if (!dateInput) return;
-    
-    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])$/;
-    if (!datePattern.test(dateInput.trim())) {
-      alert(MESSAGES.validation.invalidOffDate);
-      return;
-    }
+    const mm = String(today.getMonth() + 1);
+    const dd = String(today.getDate());
+    const dateInput = `${mm}/${dd}`;
     
     try {
-      await addOff(staff.name, dateInput.trim());
+      await addOff(staff.name, dateInput);
       fetchSheetData();
     } catch (e: any) {
       console.error(e);
