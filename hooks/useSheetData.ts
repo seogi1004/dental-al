@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { StaffData } from '@/types';
 import { signOut } from 'next-auth/react';
 
@@ -38,6 +38,10 @@ export const useSheetData = (session: any): UseSheetDataReturn => {
       setTimeout(() => setStatusMsg(''), 3000);
     }
   }, []);
+
+  useEffect(() => {
+    fetchSheetData();
+  }, [fetchSheetData]);
 
   const saveSheetData = useCallback(async (newData?: StaffData) => {
     if (!session) {
