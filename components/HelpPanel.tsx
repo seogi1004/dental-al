@@ -51,6 +51,20 @@ export default function HelpPanel() {
           </p>
         </div>
 
+        <div className="flex items-start gap-3 p-3 bg-[#F9F5F1] dark:bg-[#2C2C2C] rounded-xl border border-[#F0EAE4] dark:border-[#333333]">
+          <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-400">
+            <span className="text-xs font-bold">OFF</span>
+          </div>
+          <div>
+            <h4 className="font-bold text-[#5C5552] dark:text-[#E0E0E0] text-sm mb-1">오프(Off) 관리</h4>
+            <p className="text-xs text-[#8D7B68] dark:text-[#A0A0A0] leading-relaxed">
+              달력 날짜 우측 상단의 <span className="font-bold text-blue-500">OFF</span> 버튼을 눌러 정기 휴무를 등록하세요.
+              <br className="mb-1" />
+              수정/삭제하려면 달력에 표시된 파란색 오프 박스를 클릭하세요.
+            </p>
+          </div>
+        </div>
+
         <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
 
         <div>

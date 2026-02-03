@@ -228,19 +228,21 @@ export default function MobileScheduleList({
                   ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
                   : 'bg-[#EBE5DD] dark:bg-[#2C2C2C] text-[#8D7B68] dark:text-[#A4907C]';
             
-            return (
-              <div key={`${item.listType}-${idx}`} 
-                className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 ${containerClass}`}
-              >
-                <div 
-                  onClick={() => isOff 
-                    ? handleOffClick(item.name, item.date, item.memo) 
-                    : onLeaveClick(item.name, item.original, item.date)
-                  }
-                  className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-70 transition-opacity"
-                  title={isOff ? item.memo : (item.warning || undefined)}
+              return (
+                <div key={`${item.listType}-${idx}`} 
+                  className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 ${containerClass}`}
                 >
-                  <span className={`text-sm font-bold ${dateTextClass}`}>
+                  <div 
+                    onClick={() => isOff 
+                      ? handleOffClick(item.name, item.date, item.memo) 
+                      : onLeaveClick(item.name, item.original, item.date)
+                    }
+                    className={`flex items-center gap-3 flex-1 transition-opacity ${
+                      (isOff ? session?.isAdmin : true) ? 'cursor-pointer hover:opacity-70' : 'cursor-default'
+                    }`}
+                    title={isOff ? item.memo : (item.warning || undefined)}
+                  >
+                    <span className={`text-sm font-bold ${dateTextClass}`}>
                     {isOff ? item.date : formatDate(item.original)}
                   </span>
                   <div className={`h-4 w-[1px] ${isOff ? 'bg-blue-200 dark:bg-blue-700' : 'bg-[#EBE5DD] dark:bg-[#444444]'}`}></div>

@@ -175,7 +175,7 @@ export default function DesktopCalendar({
   const handleOffClick = async (name: string, originalDate: string) => {
     if (!session?.isAdmin) return;
 
-    const action = prompt(`${name}님의 오프 (${originalDate}) 관리\\n\\n1. 수정\\n2. 삭제`, "1");
+    const action = prompt(`${name}님의 오프 (${originalDate}) 관리\n\n1. 수정\n2. 삭제`, "1");
     if (!action) return;
 
     if (action === "2") {
@@ -328,9 +328,9 @@ export default function DesktopCalendar({
                   </div>
                 ))}
                 
-                {offs.map((off, idx) => (
+                 {offs.map((off, idx) => (
                   <div key={`off-${idx}`} 
-                       className="text-[10px] px-1.5 py-0.5 rounded flex justify-between items-center group/off cursor-pointer hover:opacity-80 transition bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                       className={`text-[10px] px-1.5 py-0.5 rounded flex justify-between items-center group/off transition bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 ${session?.isAdmin ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
                        onClick={(e) => {
                          e.stopPropagation();
                          handleOffClick(off.name, off.originalDate);
