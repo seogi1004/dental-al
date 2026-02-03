@@ -14,19 +14,20 @@ const handleApiError = (e: any) => {
   return false;
 };
 
-interface WarningBannerProps {
+export interface WarningBannerProps {
   session: {
     isAdmin: boolean;
   } | null;
   invalidLeaves: Array<{ name: string; original: string }>;
   sundayLeaves: Array<{ name: string; original: string }>;
+  className?: string;
 }
 
-const WarningBanner = ({ session, invalidLeaves, sundayLeaves }: WarningBannerProps) => {
+export const WarningBanner = ({ session, invalidLeaves, sundayLeaves, className = "" }: WarningBannerProps) => {
   if (!session?.isAdmin || (invalidLeaves.length === 0 && sundayLeaves.length === 0)) return null;
 
   return (
-    <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl">
+    <div className={`mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl ${className}`}>
       <div className="flex items-start gap-3 text-amber-800 dark:text-amber-300">
         <span className="text-xl shrink-0">⚠️</span>
         <div className="flex-1">
@@ -82,6 +83,7 @@ interface DesktopCalendarProps {
     handleLeaveAdd: (dateStr: string) => void;
   };
   onRefresh: () => void;
+  showWarning?: boolean;
 }
 
 export default function DesktopCalendar({ 
@@ -92,7 +94,8 @@ export default function DesktopCalendar({
   invalidLeaves, 
   sundayLeaves, 
   handlers,
-  onRefresh
+  onRefresh,
+  showWarning = true
 }: DesktopCalendarProps) {
   const { handleLeaveClick, handleLeaveDelete, handleLeaveAdd } = handlers;
   
@@ -254,7 +257,7 @@ export default function DesktopCalendar({
         </div>
       </div>
 
-      <WarningBanner session={session} invalidLeaves={invalidLeaves} sundayLeaves={sundayLeaves} />
+      {showWarning && <WarningBanner session={session} invalidLeaves={invalidLeaves} sundayLeaves={sundayLeaves} />}
 
       <div className="grid grid-cols-7 border-t border-l border-[#F0EAE4] dark:border-[#333333]">
         {weekDays.map((day, i) => (
