@@ -1,7 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { Metadata } from "next";
+import { Metadata, Viewport } from "next";
 import { ReactNode } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -14,6 +14,22 @@ export const metadata: Metadata = {
     icon: "/favicon.ico",
     apple: "/icons/icon-192x192.png",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "더데이연차",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#8D7B68",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 interface RootLayoutProps {

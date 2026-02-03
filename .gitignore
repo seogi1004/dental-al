@@ -4,3 +4,8 @@ node_modules
 .sisyphus/
 tsbuildinfo
 .DS_Store
+
+# PWA
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
