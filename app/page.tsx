@@ -552,7 +552,7 @@ export default function DentalLeaveApp() {
         </button>
     </div>
 
-    <div className="bg-white dark:bg-[#1E1E1E] p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] dark:text-[#E0E0E0] relative rounded-sm print:shadow-none print:w-full print:m-0 transition-colors duration-300">
+    <div className="bg-white dark:bg-[#1E1E1E] p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] dark:text-[#E0E0E0] relative rounded-sm print:shadow-none print:w-full print:h-[297mm] print:m-0 print:p-[10mm] print-form-container transition-colors duration-300">
         <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 tracking-widest text-[#222] dark:text-[#E0E0E0] font-serif">연차(휴가) 신청서</h2>
         
         <div className="flex justify-end mb-8">
@@ -606,7 +606,7 @@ export default function DentalLeaveApp() {
                 <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-3">
                     <div className="flex items-center gap-2 mb-2">
                         <input type="date" className="border dark:border-gray-500 px-2 py-1 rounded border-gray-300 bg-transparent" /> ~ <input type="date" className="border dark:border-gray-500 px-2 py-1 rounded border-gray-300 bg-transparent" />
-                        <span className="ml-4">( 총 <input type="text" className="w-10 text-center border-b border-gray-800 dark:border-gray-500 outline-none bg-transparent" /> 일간 )</span>
+                        <span className="ml-4 whitespace-nowrap">( 총 <input type="text" className="w-10 text-center border-b border-gray-800 dark:border-gray-500 outline-none bg-transparent" /> 일간 )</span>
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">※ 반차 시간: <input type="time" className="border dark:border-gray-500 px-1 rounded bg-transparent"/> ~ <input type="time" className="border dark:border-gray-500 px-1 rounded bg-transparent"/></div>
                 </td>
