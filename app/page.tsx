@@ -677,7 +677,7 @@ export default function DentalLeaveApp() {
                                             type="date" 
                                             value={formStartDate} 
                                             onChange={(e) => setFormStartDate(e.target.value)} 
-                                            className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:px-1 print:py-1 print:mb-1 print:text-xs" 
+                                            className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:border-none print:bg-transparent print:px-1 print:py-1 print:mb-1 print:text-xs" 
                                         />
                                         <div className="flex gap-3 print:gap-1.5">
                                             {[
@@ -704,7 +704,7 @@ export default function DentalLeaveApp() {
                                             type="date" 
                                             value={formEndDate} 
                                             onChange={(e) => setFormEndDate(e.target.value)} 
-                                            className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:px-1 print:py-1 print:mb-1 print:text-xs" 
+                                            className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:border-none print:bg-transparent print:px-1 print:py-1 print:mb-1 print:text-xs" 
                                         />
                                         <div className="flex gap-3 print:gap-1.5">
                                             {[
