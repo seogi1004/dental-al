@@ -28,6 +28,8 @@ export default function DentalLeaveApp() {
   const [formTotalDays, setFormTotalDays] = useState('');
   const [leaveType, setLeaveType] = useState('연차');
   const [halfDayType, setHalfDayType] = useState('AM');
+  const [startType, setStartType] = useState('FULL'); // FULL, AM, PM
+  const [endType, setEndType] = useState('FULL');     // FULL, AM, PM
 
   useEffect(() => setMounted(true), []);
 
@@ -37,28 +39,28 @@ export default function DentalLeaveApp() {
   }, []);
 
   useEffect(() => {
-    if (leaveType === '반차') {
-      setFormTotalDays('0.5');
-      if (formStartDate && !formEndDate) {
-        setFormEndDate(formStartDate);
-      }
-      return;
-    }
-    
     if (formStartDate && formEndDate) {
       const start = new Date(formStartDate);
       const end = new Date(formEndDate);
       if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end >= start) {
-        const diffTime = Math.abs(end.getTime() - start.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
-        setFormTotalDays(String(diffDays));
+        if (formStartDate === formEndDate) {
+          setFormTotalDays(startType === 'FULL' ? '1' : '0.5');
+        } else {
+          const diffTime = Math.abs(end.getTime() - start.getTime());
+          let baseDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+          
+          if (startType !== 'FULL') baseDays -= 0.5;
+          if (endType !== 'FULL') baseDays -= 0.5;
+          
+          setFormTotalDays(String(baseDays));
+        }
       } else {
         setFormTotalDays('');
       }
     } else {
       setFormTotalDays('');
     }
-  }, [formStartDate, formEndDate, leaveType]);
+  }, [formStartDate, formEndDate, startType, endType]);
 
   const toggleSidebar = () => {
     const newState = !isSidebarOpen;
@@ -646,7 +648,7 @@ export default function DentalLeaveApp() {
                 <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-3">
                     <div className="flex gap-6 items-center">
                         <div className="flex gap-6">
-                            {['연차', '반차', '병가', '경조사', '기타'].map(type => (
+                            {['연차', '병가', '경조사', '기타'].map(type => (
                                 <label key={type} className="flex items-center gap-1 cursor-pointer">
                                     <input 
                                         type="radio" 
@@ -658,39 +660,71 @@ export default function DentalLeaveApp() {
                                 </label>
                             ))}
                         </div>
-                        {leaveType === '반차' && (
-                            <div className="flex gap-4 ml-4 border-l border-gray-300 dark:border-gray-600 pl-4">
-                                <label className="flex items-center gap-1 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="halfDayType"
-                                        checked={halfDayType === 'AM'}
-                                        onChange={() => setHalfDayType('AM')}
-                                        className="w-4 h-4 accent-blue-600" 
-                                    /> 오전
-                                </label>
-                                <label className="flex items-center gap-1 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="halfDayType"
-                                        checked={halfDayType === 'PM'}
-                                        onChange={() => setHalfDayType('PM')}
-                                        className="w-4 h-4 accent-blue-600" 
-                                    /> 오후
-                                </label>
-                            </div>
-                        )}
                     </div>
                 </td>
             </tr>
             <tr>
                 <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 font-bold text-gray-800 dark:text-[#E0E0E0]">기 간</th>
                 <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-3">
-                    <div className="flex items-center gap-1 mb-2 text-sm print:text-xs">
-                        <input type="date" value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} className="border dark:border-gray-500 px-2 py-1 rounded border-gray-300 bg-transparent" /> ~ <input type="date" value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} className="border dark:border-gray-500 px-2 py-1 rounded border-gray-300 bg-transparent" />
-                        <span className="ml-2 whitespace-nowrap flex items-center">( 총 <input type="text" value={formTotalDays} readOnly className="w-8 text-center border-b border-gray-800 dark:border-gray-500 outline-none bg-transparent mx-1" /> 일간 )</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium">시작일</div>
+                            <input 
+                                type="date" 
+                                value={formStartDate} 
+                                onChange={(e) => setFormStartDate(e.target.value)} 
+                                className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2" 
+                            />
+                            <div className="flex gap-3">
+                                {[
+                                    { value: 'FULL', label: '종일' },
+                                    { value: 'AM', label: '오전' },
+                                    { value: 'PM', label: '오후' }
+                                ].map(option => (
+                                    <label key={option.value} className="flex items-center gap-1.5 cursor-pointer text-sm">
+                                        <input 
+                                            type="radio" 
+                                            name="startType"
+                                            checked={startType === option.value}
+                                            onChange={() => setStartType(option.value)}
+                                            className="w-4 h-4 accent-gray-700 dark:accent-gray-400" 
+                                        />
+                                        <span className="text-gray-700 dark:text-gray-300">{option.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium">종료일</div>
+                            <input 
+                                type="date" 
+                                value={formEndDate} 
+                                onChange={(e) => setFormEndDate(e.target.value)} 
+                                className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2" 
+                            />
+                            <div className="flex gap-3">
+                                {[
+                                    { value: 'FULL', label: '종일' },
+                                    { value: 'AM', label: '오전' },
+                                    { value: 'PM', label: '오후' }
+                                ].map(option => (
+                                    <label key={option.value} className="flex items-center gap-1.5 cursor-pointer text-sm">
+                                        <input 
+                                            type="radio" 
+                                            name="endType"
+                                            checked={endType === option.value}
+                                            onChange={() => setEndType(option.value)}
+                                            className="w-4 h-4 accent-gray-700 dark:accent-gray-400" 
+                                        />
+                                        <span className="text-gray-700 dark:text-gray-300">{option.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">※ 반차 시간: <input type="time" className="border dark:border-gray-500 px-1 rounded bg-transparent"/> ~ <input type="time" className="border dark:border-gray-500 px-1 rounded bg-transparent"/></div>
+                    <div className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200">
+                        총 <span className="text-lg text-gray-900 dark:text-white font-bold mx-1">{formTotalDays || '0'}</span> 일간
+                    </div>
                 </td>
             </tr>
             <tr>
