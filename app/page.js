@@ -206,12 +206,20 @@ export default function DentalLeaveApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newData || staffData),
       });
-      if (!res.ok) throw new Error('Failed to save');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || errData.message || 'Failed to save');
+      }
       
       setStatusMsg('저장됨');
       setTimeout(() => setStatusMsg(''), 2000);
     } catch (error) {
       console.error("Save Error:", error);
+      if (error.message && (error.message.includes('invalid authentication') || error.message.includes('credentials') || error.message.includes('access token'))) {
+        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+        signOut();
+        return;
+      }
       setStatusMsg('저장 실패');
     }
   };
@@ -329,6 +337,11 @@ export default function DentalLeaveApp() {
       fetchSheetData();
     } catch (e) {
       console.error(e);
+      if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials') || e.message.includes('access token'))) {
+        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+        signOut();
+        return;
+      }
       alert("수정 실패: " + e.message);
       setStatusMsg("오류 발생");
     }
@@ -356,6 +369,11 @@ export default function DentalLeaveApp() {
       fetchSheetData();
     } catch (e) {
       console.error(e);
+      if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials') || e.message.includes('access token'))) {
+        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+        signOut();
+        return;
+      }
       alert("삭제 실패: " + e.message);
       setStatusMsg("오류 발생");
     }
@@ -423,6 +441,11 @@ export default function DentalLeaveApp() {
       fetchSheetData();
     } catch (e) {
       console.error(e);
+      if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials') || e.message.includes('access token'))) {
+        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+        signOut();
+        return;
+      }
       alert("추가 실패: " + e.message);
       setStatusMsg("오류 발생");
     }
