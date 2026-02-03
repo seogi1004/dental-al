@@ -243,13 +243,10 @@ export default function MobileScheduleList({
                     title={isOff ? item.memo : (item.warning || undefined)}
                   >
                     <span className={`text-sm font-bold ${dateTextClass}`}>
-                    {isOff ? item.date : formatDate(item.original)}
+                    {formatDate(item.original)}
                   </span>
                   <div className={`h-4 w-[1px] ${isOff ? 'bg-blue-200 dark:bg-blue-700' : 'bg-[#EBE5DD] dark:bg-[#444444]'}`}></div>
                   <span className={`font-medium ${nameTextClass}`}>{item.name}</span>
-                  {item.role && (
-                    <span className="text-xs text-[#A4907C] dark:text-[#C4B09C] bg-white dark:bg-[#2C2C2C] px-1.5 py-0.5 rounded border border-[#EBE5DD] dark:border-[#444444]">{item.role}</span>
-                  )}
                   {item.type === 'OFF' ? (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${badgeColor}`}>OFF</span>
                   ) : item.type !== 'FULL' && (

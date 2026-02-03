@@ -94,6 +94,16 @@ export default function HelpPanel() {
           </ul>
         </div>
 
+        <div className="mt-6 border-t border-[#F0EAE4] dark:border-[#333333] pt-4">
+          <h4 className="font-bold text-[#5C5552] dark:text-[#E0E0E0] text-sm mb-2 flex items-center gap-2">
+            💡 알아두면 좋은 팁
+          </h4>
+          <ul className="text-xs text-[#8D7B68] dark:text-[#A0A0A0] space-y-1 list-disc pl-4">
+            <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">연차</strong>는 연간 발생 일수에서 차감되지만, <strong className="text-[#5C5552] dark:text-[#E0E0E0]">오프</strong>는 차감되지 않는 정기 휴무입니다.</li>
+            <li>상단 <strong className="text-[#5C5552] dark:text-[#E0E0E0]">신청서</strong> 탭에서 연차신청서를 바로 인쇄할 수 있습니다.</li>
+          </ul>
+        </div>
+
         <a 
           href="https://docs.google.com/spreadsheets/d/1dmMlb4IxUQO9AZBVSAgS72cXDJqWDLicx-FL0IzH5Eo/edit#gid=191374435"
           target="_blank"
