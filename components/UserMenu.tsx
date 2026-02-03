@@ -21,7 +21,7 @@ export default function UserMenu({ session, signIn, signOut }: UserMenuProps) {
   if (!session) {
     return (
       <button onClick={() => signIn("google")} className="ml-2 bg-[#7A6A59] dark:bg-[#4A3B2F] hover:bg-[#6B5D4D] text-[#EBE5DD] hover:text-white px-4 py-2 rounded-full transition text-sm font-bold flex items-center gap-2 shadow-sm">
-        <LogIn className="w-4 h-4" /> 로그인
+        <LogIn className="w-4 h-4" /> <span className="hidden md:inline">로그인</span>
       </button>
     );
   }
