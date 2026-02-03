@@ -52,7 +52,12 @@ export const WarningBanner = ({ session, invalidLeaves, sundayLeaves, className 
               <ul className="text-xs space-y-1 mb-2">
                 {sundayLeaves.slice(0, 5).map((item, idx) => (
                   <li key={idx}>
-                    • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded text-[10px]">"{item.date ? formatDate(item.date) : item.original}"</code>
+                    • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded text-[10px]">
+                      "{item.date ? (() => {
+                          const parts = item.date.split('-');
+                          return parts.length === 3 ? `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}` : item.date;
+                        })() : item.original}"
+                    </code>
                   </li>
                 ))}
                 {sundayLeaves.length > 5 && (
