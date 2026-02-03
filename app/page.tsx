@@ -120,14 +120,19 @@ export default function DentalLeaveApp() {
     if (newValue === null) return;
     if (newValue.trim() === '' || newValue.trim() === originalDate) return;
     
+    let processedValue = newValue.trim().toUpperCase();
+    processedValue = processedValue.replace('오전', 'AM').replace('오후', 'PM');
+    if (processedValue.endsWith(' A')) processedValue = processedValue.slice(0, -2) + ' AM';
+    if (processedValue.endsWith(' P')) processedValue = processedValue.slice(0, -2) + ' PM';
+    
     const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM))?$/i;
-    if (!datePattern.test(newValue.trim())) {
+    if (!datePattern.test(processedValue)) {
       alert(MESSAGES.validation.invalidDate);
       return;
     }
     
     try {
-      await updateLeave(staffName, originalDate, newValue.trim());
+      await updateLeave(staffName, originalDate, processedValue);
       fetchSheetData();
     } catch (e: any) {
       console.error(e);
@@ -182,8 +187,8 @@ export default function DentalLeaveApp() {
     
     let typeUpper = typeInput.trim().toUpperCase();
     
-    if (typeUpper === 'A') typeUpper = 'AM';
-    if (typeUpper === 'P') typeUpper = 'PM';
+    if (['A', 'AM', '오전'].includes(typeUpper)) typeUpper = 'AM';
+    else if (['P', 'PM', '오후'].includes(typeUpper)) typeUpper = 'PM';
     
     if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
       alert(MESSAGES.validation.invalidType);
@@ -239,8 +244,10 @@ export default function DentalLeaveApp() {
     if (typeInput === null) return;
     
     let typeUpper = typeInput.trim().toUpperCase();
-    if (typeUpper === 'A') typeUpper = 'AM';
-    if (typeUpper === 'P') typeUpper = 'PM';
+    
+    // Normalize input
+    if (['A', 'AM', '오전'].includes(typeUpper)) typeUpper = 'AM';
+    else if (['P', 'PM', '오후'].includes(typeUpper)) typeUpper = 'PM';
     
     if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
       alert(MESSAGES.validation.invalidType);
