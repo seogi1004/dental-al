@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Staff, StaffData, LeaveItem, LeaveType } from '@/types';
+import { Staff, StaffData, LeaveItem, LeaveType, OffItem } from '@/types';
 import { parseLeaveDate, isValidDate, getTodayString } from '@/lib/date';
 
 interface UseLeaveCalculationsReturn {
@@ -7,6 +7,9 @@ interface UseLeaveCalculationsReturn {
   getTodayLeaves: () => (Staff & { leaveType: LeaveType; original: string })[];
   getInvalidLeaves: () => { name: string; original: string; reason: string }[];
   getSundayLeaves: () => { name: string; original: string; date: string; reason: string }[];
+  getTodayOffs: () => { name: string; memo?: string }[];
+  getCurrentMonthOffs: () => OffItem[];
+  getSundayOffs: () => { name: string; date: string; reason: string }[];
 }
 
 export const useLeaveCalculations = (staffData: StaffData): UseLeaveCalculationsReturn => {
@@ -119,10 +122,74 @@ export const useLeaveCalculations = (staffData: StaffData): UseLeaveCalculations
     return sundayList;
   }, [staffData]);
 
+  const getTodayOffs = useCallback(() => {
+    const todayStr = getTodayString();
+    const list: { name: string; memo?: string }[] = [];
+    
+    staffData.forEach(staff => {
+      if (staff.offs) {
+        staff.offs.forEach(off => {
+          if (off.dateParsed === todayStr) {
+            list.push({ name: staff.name, memo: off.memo });
+          }
+        });
+      }
+    });
+    return list;
+  }, [staffData]);
+
+  const getCurrentMonthOffs = useCallback((): OffItem[] => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    const offsList: OffItem[] = [];
+    staffData.forEach(staff => {
+      if (staff.offs) {
+        staff.offs.forEach(off => {
+          const d = new Date(off.dateParsed);
+          // 날짜 유효성 체크
+          if (!isNaN(d.getTime()) && d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+            offsList.push({
+              name: staff.name,
+              date: off.dateParsed,
+              dateObj: d,
+              memo: off.memo
+            });
+          }
+        });
+      }
+    });
+    return offsList.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+  }, [staffData]);
+
+  const getSundayOffs = useCallback(() => {
+    const sundayList: { name: string; date: string; reason: string }[] = [];
+    staffData.forEach(staff => {
+      if (staff.offs) {
+        staff.offs.forEach(off => {
+          const d = new Date(off.dateParsed);
+          // 날짜 유효성 체크 && 일요일(0) 체크
+          if (!isNaN(d.getTime()) && d.getDay() === 0) {
+            sundayList.push({
+              name: staff.name,
+              date: off.dateParsed,
+              reason: '일요일에 오프가 등록되었습니다.'
+            });
+          }
+        });
+      }
+    });
+    return sundayList;
+  }, [staffData]);
+
   return {
     getCurrentMonthLeaves,
     getTodayLeaves,
     getInvalidLeaves,
-    getSundayLeaves
+    getSundayLeaves,
+    getTodayOffs,
+    getCurrentMonthOffs,
+    getSundayOffs
   };
 };

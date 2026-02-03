@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { StaffData } from '@/types';
+import { StaffData, Off } from '@/types';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   let session: any = null;
@@ -10,6 +10,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // 시트 이름 설정
   const SHEET_SUMMARY = '연차계산'; // 요약 정보
   const SHEET_CALENDAR = '2026년';  // 달력 상세 정보
+  const SHEET_OFF = '2026년_오프';
+  const GID_OFF = "933792371";
 
   try {
     session = await getServerSession(req, res, authOptions);
@@ -72,6 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       let summaryRows: any[][] = [];
       let calendarRows: any[][] = [];
+      let offRows: any[][] = [];
       let fetchedViaApi = false;
 
       // --------------------------------------------------------
@@ -87,8 +90,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const sheets = google.sheets({ version: 'v4', auth });
           const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-          // 두 시트 동시에 요청
-          const [resSummary, resCalendar] = await Promise.all([
+          // 세 시트 동시에 요청
+          const [resSummary, resCalendar, resOff] = await Promise.all([
             sheets.spreadsheets.values.get({
               spreadsheetId,
               range: `${SHEET_SUMMARY}!A2:F`,
@@ -96,11 +99,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             sheets.spreadsheets.values.get({
               spreadsheetId,
               range: `${SHEET_CALENDAR}!A3:ZZ`, // 3행부터, E열(인덱스 4) 이후 데이터 검색
+            }),
+            sheets.spreadsheets.values.get({
+              spreadsheetId,
+              range: `${SHEET_OFF}!A2:C`,  // 헤더 제외, A:이름, B:날짜, C:비고
             })
           ]);
 
           summaryRows = resSummary.data.values || [];
           calendarRows = resCalendar.data.values || [];
+          offRows = resOff.data.values || [];
           fetchedViaApi = true;
         } catch (apiError: any) {
           console.error("Google API Fetch Failed (Falling back to CSV):", apiError.message);
@@ -123,17 +131,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // 2번 시트 (2026년) - gid=191374435
         const urlCalendar = `${baseUrl}&gid=${GID_CALENDAR}`;
 
-        const [textSummary, textCalendar] = await Promise.all([
+        // 3번 시트 (2026년_오프)
+        const urlOff = `${baseUrl}&gid=${GID_OFF}`;
+
+        const [textSummary, textCalendar, textOff] = await Promise.all([
             fetch(urlSummary).then(r => r.ok ? r.text() : ""),
-            fetch(urlCalendar).then(r => r.ok ? r.text() : "")
+            fetch(urlCalendar).then(r => r.ok ? r.text() : ""),
+            fetch(urlOff).then(r => r.ok ? r.text() : "")
         ]);
 
         const parsedSummary = parseCSV(textSummary);
         const parsedCalendar = parseCSV(textCalendar);
+        const parsedOff = parseCSV(textOff);
 
         // 헤더 제거
         summaryRows = parsedSummary.slice(1); 
         calendarRows = parsedCalendar.slice(2);
+        offRows = parsedOff.slice(1);
       }
 
       // --------------------------------------------------------
@@ -192,6 +206,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       });
 
+      // 오프 데이터 파싱 (세로 형태 → 이름별 그룹화)
+      const offMap: { [name: string]: Off[] } = {};
+
+      offRows.forEach(row => {
+        const name = row[0]?.trim();
+        const dateRaw = row[1]?.trim();  // MM/DD
+        const memo = row[2]?.trim() || '';
+        
+        if (!name || !dateRaw) return;
+        
+        // MM/DD → YYYY-MM-DD 파싱 로직 강화
+        try {
+          // 1. "AM", "PM" 제거 및 공백 정리
+          let datePart = dateRaw.replace(/AM|PM/gi, '').trim();
+
+          // 2. 구분자 통일 (/, . -> -)
+          datePart = datePart.replace(/[\/\.]/g, '-');
+
+          const parts = datePart.split('-');
+          if (parts.length >= 2) {
+            const monthStr = parts[0].trim();
+            const dayStr = parts[1].trim();
+            
+            // 3. 숫자 여부 및 범위 체크
+            const month = parseInt(monthStr, 10);
+            const day = parseInt(dayStr, 10);
+            
+            if (!isNaN(month) && !isNaN(day) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+              const monthFormatted = String(month).padStart(2, '0');
+              const dayFormatted = String(day).padStart(2, '0');
+              const dateParsed = `${currentYear}-${monthFormatted}-${dayFormatted}`;
+              
+              // 4. 유효한 날짜 객체인지 재확인 (예: 2월 30일 방지)
+              const d = new Date(dateParsed);
+              if (!isNaN(d.getTime()) && d.getMonth() + 1 === month && d.getDate() === day) {
+                if (!offMap[name]) offMap[name] = [];
+                offMap[name].push({ name, date: dateRaw, dateParsed, memo });
+              }
+            }
+          }
+        } catch (e) {
+          console.error(`Error parsing off date: ${dateRaw} for ${name}`, e);
+        }
+      });
+
       // 2. 요약 데이터에 달력 데이터 합치기
       const combinedData: StaffData = summaryRows.map(row => {
         const name = row[0] || '';
@@ -206,6 +265,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // 이름이 일치하는 달력 데이터가 있으면 추가, 없으면 빈 배열
         baseData.leaves = calendarMap[name] || [];
+        baseData.offs = offMap[name] || [];
         
         return baseData;
       });

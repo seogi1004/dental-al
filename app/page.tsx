@@ -9,7 +9,7 @@ import {
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 
-import { Staff, StaffData } from '@/types';
+import { Staff } from '@/types';
 import { theme } from '@/lib/theme';
 import { getTodayString, formatDate, parseLeaveDate } from '@/lib/date';
 import { UserMenu, TodayStatusCard, MobileScheduleList, DesktopCalendar, HelpPanel } from '@/components';
@@ -43,6 +43,8 @@ export default function DentalLeaveApp() {
     getTodayLeaves, 
     getInvalidLeaves, 
     getSundayLeaves,
+    getTodayOffs,
+    getCurrentMonthOffs,
   } = useLeaveCalculations(staffData);
 
   const invalidLeaves = getInvalidLeaves();
@@ -437,41 +439,45 @@ export default function DentalLeaveApp() {
              <div className="w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
                  
                  <div className="lg:col-span-9">
-                     <div className="md:hidden mb-6">
-                        <div className="mb-4">
-                          <TodayStatusCard 
-                             todayLeaves={getTodayLeaves()} 
-                             loading={loading} 
-                             statusMsg={statusMsg} 
+                      <div className="md:hidden mb-6">
+                         <div className="mb-4">
+                           <TodayStatusCard 
+                              todayLeaves={getTodayLeaves()} 
+                              todayOffs={getTodayOffs()}
+                              loading={loading} 
+                              statusMsg={statusMsg} 
+                           />
+                         </div>
+                          <MobileScheduleList 
+                            leaves={getCurrentMonthLeaves()}
+                            monthOffs={getCurrentMonthOffs()}
+                            onRefresh={fetchSheetData}
+                            onLeaveClick={handleLeaveClickWrapper}
+                            onLeaveDelete={handleLeaveDeleteWrapper}
+                            session={session as any}
+                            getTodayString={getTodayString}
+                            formatDate={formatDate}
+                            todayMonth={new Date().getMonth() + 1}
+                            invalidLeaves={invalidLeaves}
+                            sundayLeaves={sundayLeaves}
                           />
-                        </div>
-                        <MobileScheduleList 
-                          leaves={getCurrentMonthLeaves()}
-                          onLeaveClick={handleLeaveClickWrapper}
-                          onLeaveDelete={handleLeaveDeleteWrapper}
-                          session={session as any}
-                          getTodayString={getTodayString}
-                          formatDate={formatDate}
-                          todayMonth={new Date().getMonth() + 1}
-                          invalidLeaves={invalidLeaves}
-                          sundayLeaves={sundayLeaves}
-                        />
-                     </div>
+                      </div>
 
                      <div className="hidden md:block space-y-6">
                          <div className="grid grid-cols-4 gap-6">
                              <div className="col-span-2">
-                                 <TodayStatusCard 
-                                   todayLeaves={getTodayLeaves()} 
-                                   loading={loading} 
-                                   statusMsg={statusMsg} 
-                                 />
+                                  <TodayStatusCard 
+                                    todayLeaves={getTodayLeaves()} 
+                                    todayOffs={getTodayOffs()}
+                                    loading={loading} 
+                                    statusMsg={statusMsg} 
+                                  />
                              </div>
                              <div className="col-span-2">
                                   {invalidLeaves.length > 0 || sundayLeaves.length > 0 ? (
                                      <div className="h-full bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-700 p-5 flex items-center justify-center transition-colors">
                                          <p className="text-amber-800 dark:text-amber-300 font-medium text-center">
-                                             ⚠️ 연차 일정 확인이 필요합니다
+                                             ⚠️ 직원 일정 확인이 필요합니다
                                          </p>
                                      </div>
                                   ) : (
@@ -489,12 +495,13 @@ export default function DentalLeaveApp() {
                            session={session as any}
                            invalidLeaves={invalidLeaves}
                            sundayLeaves={sundayLeaves}
-                           handlers={{
-                             handleLeaveClick: handleLeaveClickWrapper,
-                             handleLeaveDelete: handleLeaveDeleteWrapper,
-                             handleLeaveAdd: handleLeaveAddWrapper
-                           }}
-                         />
+                            handlers={{
+                              handleLeaveClick: handleLeaveClickWrapper,
+                              handleLeaveDelete: handleLeaveDeleteWrapper,
+                              handleLeaveAdd: handleLeaveAddWrapper
+                            }}
+                            onRefresh={fetchSheetData}
+                          />
                      </div>
 
                      <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl shadow-sm p-4 md:p-8 border border-[#F0EAE4] dark:border-[#333333] transition-colors duration-300 mt-6">
@@ -531,75 +538,100 @@ export default function DentalLeaveApp() {
            </div>
          )}
 
-         {activeTab === 'form' && (
-            <div className="p-8 md:p-12 bg-white dark:bg-[#1E1E1E] min-h-[800px] flex justify-center transition-colors duration-300">
-                <div className="max-w-3xl w-full border-2 border-black dark:border-white p-8 md:p-16 relative bg-white dark:bg-[#1E1E1E] text-black dark:text-white">
-                    <button onClick={() => window.print()} className="absolute top-4 right-4 print:hidden flex items-center gap-2 text-[#8D7B68] dark:text-[#A4907C] hover:text-[#5C5552] dark:hover:text-[#E0E0E0] font-bold">
-                        <Printer className="w-5 h-5" /> 인쇄하기
-                    </button>
+          {activeTab === 'form' && (
+  <div className="p-8 bg-[#FDFBF7] dark:bg-[#121212] flex flex-col items-center transition-colors duration-300">
+     <div className="w-full flex justify-end mb-6 print:hidden">
+        <button onClick={() => window.print()} className={`flex items-center gap-2 ${theme.primary} text-white px-5 py-2.5 rounded-xl transition shadow-md text-sm font-bold`}>
+            <Printer className="w-4 h-4" /> 인쇄하기
+        </button>
+    </div>
 
-                    <div className="text-center mb-16 border-b-2 border-black dark:border-white pb-8">
-                        <h1 className="text-4xl font-serif font-bold tracking-widest mb-4">연 차 신 청 서</h1>
-                        <p className="text-sm tracking-widest opacity-60">LEAVE APPLICATION FORM</p>
+    <div className="bg-white dark:bg-[#1E1E1E] p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] dark:text-[#E0E0E0] relative rounded-sm print:shadow-none print:w-full print:m-0 transition-colors duration-300">
+        <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 tracking-widest text-[#222] dark:text-[#E0E0E0] font-serif">연차(휴가) 신청서</h2>
+        
+        <div className="flex justify-end mb-8">
+            <table className="border border-gray-800 dark:border-gray-500 text-center text-sm w-64">
+                <tbody>
+                <tr>
+                    <th rowSpan={2} className="bg-gray-100 dark:bg-[#2D2D2D] border border-gray-800 dark:border-gray-500 px-2 py-4 w-10 font-serif">결<br/>재</th>
+                    <td className="border border-gray-800 dark:border-gray-500 py-1">담 당</td>
+                    <td className="border border-gray-800 dark:border-gray-500 py-1">실 장</td>
+                    <td className="border border-gray-800 dark:border-gray-500 py-1">원 장</td>
+                </tr>
+                <tr>
+                    <td className="border border-gray-800 dark:border-gray-500 h-16"></td>
+                    <td className="border border-gray-800 dark:border-gray-500 h-16"></td>
+                    <td className="border border-gray-800 dark:border-gray-500 h-16"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <table className="w-full border-collapse border border-gray-800 dark:border-gray-500 mb-6 text-sm">
+            <tbody>
+            <tr>
+                <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 w-28 font-bold text-gray-800 dark:text-[#E0E0E0]">성 명</th>
+                <td className="border border-gray-800 dark:border-gray-500 p-2"><input type="text" className="w-full p-1 outline-none font-medium bg-transparent" placeholder="이름 입력" /></td>
+                <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 w-28 font-bold text-gray-800 dark:text-[#E0E0E0]">소 속</th>
+                <td className="border border-gray-800 dark:border-gray-500 p-2">
+                    <select className="w-full p-1 outline-none bg-transparent appearance-none">
+                        <option>진료팀</option><option>데스크팀</option><option>기공실</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 font-bold text-gray-800 dark:text-[#E0E0E0]">비상연락</th>
+                <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-2"><input type="text" className="w-full p-1 outline-none bg-transparent" placeholder="010-0000-0000" /></td>
+            </tr>
+            <tr>
+                <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 font-bold text-gray-800 dark:text-[#E0E0E0]">종 류</th>
+                <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-3">
+                    <div className="flex gap-6">
+                        {['연차', '반차', '병가', '경조사', '기타'].map(type => (
+                            <label key={type} className="flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" className="w-4 h-4 accent-gray-600" /> {type}
+                            </label>
+                        ))}
                     </div>
-
-                    <div className="space-y-12 font-serif">
-                        <div className="grid grid-cols-2 gap-8">
-                            <div className="border-b border-black dark:border-white pb-2 flex gap-4 items-end">
-                                <span className="text-sm font-bold w-16 text-left">성 명</span>
-                                <span className="flex-1 text-center text-xl"></span>
-                            </div>
-                            <div className="border-b border-black dark:border-white pb-2 flex gap-4 items-end">
-                                <span className="text-sm font-bold w-16 text-left">직 위</span>
-                                <span className="flex-1 text-center text-xl"></span>
-                            </div>
-                        </div>
-
-                        <div className="border-b border-black dark:border-white pb-2 flex gap-4 items-end">
-                            <span className="text-sm font-bold w-16 text-left shrink-0">기 간</span>
-                            <span className="flex-1 text-center text-xl flex justify-center gap-4 items-center">
-                                <span>2024년</span>
-                                <span>월</span>
-                                <span>일</span>
-                                <span className="text-sm mx-2">~</span>
-                                <span>2024년</span>
-                                <span>월</span>
-                                <span>일</span>
-                            </span>
-                        </div>
-
-                        <div className="border-b border-black dark:border-white pb-2 flex gap-4 items-end">
-                            <span className="text-sm font-bold w-16 text-left shrink-0">종 류</span>
-                            <div className="flex-1 flex justify-around text-sm">
-                                <label className="flex items-center gap-2"><div className="w-4 h-4 border border-black dark:border-white"></div> 연차</label>
-                                <label className="flex items-center gap-2"><div className="w-4 h-4 border border-black dark:border-white"></div> 반차</label>
-                                <label className="flex items-center gap-2"><div className="w-4 h-4 border border-black dark:border-white"></div> 월차</label>
-                                <label className="flex items-center gap-2"><div className="w-4 h-4 border border-black dark:border-white"></div> 기타</label>
-                            </div>
-                        </div>
-
-                        <div className="border-b border-black dark:border-white pb-2 flex gap-4 items-end">
-                            <span className="text-sm font-bold w-16 text-left shrink-0">사 유</span>
-                            <span className="flex-1 text-left px-2"></span>
-                        </div>
-
-                        <div className="mt-20 text-center space-y-4">
-                            <p className="leading-loose">위와 같이 휴가를 신청하오니 허락하여 주시기 바랍니다.</p>
-                            <p className="mt-8 font-bold text-lg">2024년 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;일</p>
-                            <div className="mt-16 flex justify-end gap-4 items-center pr-12">
-                                <span>신청인 : </span>
-                                <span className="w-24 border-b border-black dark:border-white"></span>
-                                <span>(인)</span>
-                            </div>
-                        </div>
+                </td>
+            </tr>
+            <tr>
+                <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 font-bold text-gray-800 dark:text-[#E0E0E0]">기 간</th>
+                <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                        <input type="date" className="border dark:border-gray-500 px-2 py-1 rounded border-gray-300 bg-transparent" /> ~ <input type="date" className="border dark:border-gray-500 px-2 py-1 rounded border-gray-300 bg-transparent" />
+                        <span className="ml-4">( 총 <input type="text" className="w-10 text-center border-b border-gray-800 dark:border-gray-500 outline-none bg-transparent" /> 일간 )</span>
                     </div>
-
-                    <div className="mt-32 text-center border-t-2 border-black dark:border-white pt-8">
-                        <h2 className="text-2xl font-bold tracking-widest">더데이치과 원장 귀하</h2>
-                    </div>
-                </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">※ 반차 시간: <input type="time" className="border dark:border-gray-500 px-1 rounded bg-transparent"/> ~ <input type="time" className="border dark:border-gray-500 px-1 rounded bg-transparent"/></div>
+                </td>
+            </tr>
+            <tr>
+                <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 font-bold text-gray-800 dark:text-[#E0E0E0]">사 유</th>
+                <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-3 h-32 align-top">
+                    <textarea className="w-full h-full p-1 outline-none resize-none bg-transparent" placeholder="사유를 기재해 주세요"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 font-bold text-gray-800 dark:text-[#E0E0E0]">인수인계</th>
+                <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-3 h-32 align-top">
+                    <textarea className="w-full h-full p-1 outline-none resize-none bg-transparent" placeholder="1. 예약 변경 건: &#13;&#10;2. 전달 사항:"></textarea>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        
+        <div className="text-center mt-16">
+            <p className="text-lg mb-8 font-medium font-serif text-gray-800 dark:text-[#E0E0E0]">2026년 &nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;일</p>
+            <div className="flex justify-center items-center gap-4 mb-16">
+                <span className="text-lg font-bold font-serif text-gray-800 dark:text-[#E0E0E0]">신 청 인 :</span>
+                <input type="text" className="text-xl text-center border-b border-gray-800 dark:border-gray-500 w-32 outline-none font-serif bg-transparent" />
+                <span className="text-lg font-bold font-serif text-gray-800 dark:text-[#E0E0E0]">(인)</span>
             </div>
-         )}
+            <h3 className="text-3xl font-bold tracking-[0.2em] font-serif text-gray-900 dark:text-[#E0E0E0]">더데이치과 귀중</h3>
+        </div>
+    </div>
+  </div>
+)}
        </div>
     </div>
   );

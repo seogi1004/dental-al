@@ -1,18 +1,22 @@
 'use client';
 
 import { Clock, CheckCircle, RefreshCw } from 'lucide-react';
-import { LeaveItem } from '@/types';
+
 
 interface TodayStatusCardProps {
   todayLeaves: Array<{
     name: string;
     leaveType?: 'AM' | 'PM' | 'FULL';
   }>;
+  todayOffs: Array<{
+    name: string;
+    memo?: string;
+  }>;
   loading: boolean;
   statusMsg: string;
 }
 
-export default function TodayStatusCard({ todayLeaves, loading, statusMsg }: TodayStatusCardProps) {
+export default function TodayStatusCard({ todayLeaves, todayOffs, loading, statusMsg }: TodayStatusCardProps) {
   // 상태 메시지 결정
   let displayStatus = "자동 동기화";
   let StatusIcon = CheckCircle;
@@ -27,15 +31,18 @@ export default function TodayStatusCard({ todayLeaves, loading, statusMsg }: Tod
     StatusIcon = CheckCircle;
   }
 
+  const totalAbsent = todayLeaves.length + todayOffs.length;
+
   return (
     <div className="bg-[#8D7B68] dark:bg-[#5C4A3A] text-white p-5 rounded-2xl shadow-lg flex items-center justify-between mb-4 h-full transition-colors duration-300">
       <div>
         <h3 className="text-sm opacity-90 mb-1 flex items-center gap-1"><Clock className="w-4 h-4"/> 오늘의 현황</h3>
         <p className="text-2xl font-bold">
-          {todayLeaves.length > 0 ? `${todayLeaves.length}명 휴가 중` : "전원 출근"}
+          {totalAbsent > 0 ? `${totalAbsent}명 부재중` : "전원 출근"}
         </p>
         {todayLeaves.length > 0 && (
           <div className="text-xs mt-2 opacity-80 flex flex-wrap gap-2">
+            <span className="font-bold mr-1">🏖️ 연차:</span>
             {todayLeaves.map((p, i) => (
               <span key={i} className="flex items-center gap-1">
                 {p.name}
@@ -44,6 +51,17 @@ export default function TodayStatusCard({ todayLeaves, loading, statusMsg }: Tod
                 {i < todayLeaves.length - 1 && <span>,</span>}
               </span>
             ))}
+          </div>
+        )}
+        {todayOffs.length > 0 && (
+          <div className="text-xs mt-2 opacity-90 flex flex-wrap gap-2 text-blue-100">
+             <span className="font-bold mr-1">🔵 오프:</span>
+             {todayOffs.map((p, i) => (
+               <span key={i} className="flex items-center gap-1">
+                 {p.name}
+                 {i < todayOffs.length - 1 && <span>,</span>}
+               </span>
+             ))}
           </div>
         )}
       </div>

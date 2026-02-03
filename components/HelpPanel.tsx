@@ -1,5 +1,7 @@
 'use client';
 
+import { FileText } from 'lucide-react';
+
 export default function HelpPanel() {
   return (
     <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-2xl shadow-sm border border-[#F0EAE4] dark:border-[#333333] sticky top-6 h-fit transition-colors duration-300">
@@ -77,12 +79,12 @@ export default function HelpPanel() {
         </div>
 
         <a 
-          href={`https://docs.google.com/spreadsheets/d/1dmMlb4IxUQO9AZBVSAgS72cXDJqWDLicx-FL0IzH5Eo/edit#gid=191374435`}
+          href="https://docs.google.com/spreadsheets/d/1dmMlb4IxUQO9AZBVSAgS72cXDJqWDLicx-FL0IzH5Eo/edit#gid=191374435"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 text-[#8D7B68] dark:text-[#A4907C] hover:text-[#6B5D4D] dark:hover:text-[#C4B09C] font-medium text-sm transition-colors mt-4"
+          className="mt-4 w-full flex items-center justify-center gap-2 bg-[#8D7B68] dark:bg-[#6D5B4B] hover:bg-[#7A6A59] dark:hover:bg-[#5C4A3A] text-white px-4 py-3 rounded-xl transition-colors font-bold text-sm shadow-sm"
         >
-          📄 구글 시트 바로가기 →
+          <FileText className="w-4 h-4" /> 구글 시트 바로가기
         </a>
       </div>
     </div>

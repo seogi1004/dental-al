@@ -1,4 +1,5 @@
 import { Leave } from './leave';
+import { Off } from './off';
 
 export interface Staff {
   name: string;
@@ -8,6 +9,7 @@ export interface Staff {
   used: number;
   memo: string;
   leaves?: Leave[];
+  offs?: Off[];
   isNew?: boolean;
 }
 
