@@ -16,15 +16,31 @@ const handleApiError = (e: any) => {
   return false;
 };
 
-interface WarningBannerProps {
+interface MobileScheduleListProps {
+  leaves: Array<{
+    name: string;
+    role: string;
+    date: string;
+    original: string;
+    type: 'AM' | 'PM' | 'FULL';
+    isDuplicate?: boolean;
+    warning?: string | null;
+  }>;
+  monthOffs: OffItem[];
+  onLeaveClick: (name: string, original: string, date: string) => void;
+  onLeaveDelete: (name: string, original: string) => void;
+  onRefresh: () => void;
   session: {
     isAdmin: boolean;
   } | null;
+  getTodayString: () => string;
+  formatDate: (dateStr: string) => string;
+  todayMonth: number;
   invalidLeaves: Array<{ name: string; original: string }>;
   sundayLeaves: Array<{ name: string; original: string }>;
 }
 
-export default function MobileScheduleList({ 
+export default function MobileScheduleList({
   leaves, 
   monthOffs,
   onLeaveClick, 
