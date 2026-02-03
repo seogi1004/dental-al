@@ -1,6 +1,6 @@
 'use client';
 
-import { FileText, Shield, MousePointerClick, AlertTriangle, Info, CheckCircle2 } from 'lucide-react';
+import { FileText, Shield, MousePointerClick, AlertTriangle, Info, CheckCircle2, Download } from 'lucide-react';
 
 export default function HelpPanel() {
   return (
@@ -111,6 +111,36 @@ export default function HelpPanel() {
             <li><span className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1 rounded font-bold">형식 오류</span> 시 노란색 경고가 뜹니다.</li>
           </ul>
         </div>
+
+        <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
+
+        {/* 5. 앱 설치 (PWA) */}
+        <div>
+          <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2 flex items-center gap-1.5 text-sm">
+            <Download className="w-4 h-4" /> 앱 설치 (PWA)
+          </h4>
+          <div className="text-xs space-y-2 text-[#5C5552] dark:text-[#A0A0A0]">
+            <p className="flex items-center gap-1">
+              <span className="text-blue-500 font-bold">Chrome</span> 브라우저 권장
+            </p>
+            <ul className="list-disc pl-4 space-y-1.5">
+              <li>
+                <strong className="text-[#5C5552] dark:text-[#E0E0E0]">PC</strong>: 
+                주소창 우측 <span className="inline-block border border-[#EBE5DD] dark:border-[#444] rounded px-1 text-[10px]">📥 설치</span> 클릭
+              </li>
+              <li>
+                <strong className="text-[#5C5552] dark:text-[#E0E0E0]">Android</strong>: 
+                메뉴(⋮) &gt; <span className="font-bold">앱 설치</span>
+              </li>
+              <li>
+                <strong className="text-[#5C5552] dark:text-[#E0E0E0]">iPhone</strong>: 
+                공유 버튼 &gt; <span className="font-bold">홈 화면에 추가</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
 
         <a 
           href="https://docs.google.com/spreadsheets/d/1dmMlb4IxUQO9AZBVSAgS72cXDJqWDLicx-FL0IzH5Eo/edit#gid=191374435"
