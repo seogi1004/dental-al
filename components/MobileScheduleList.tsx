@@ -256,7 +256,7 @@ export default function MobileScheduleList({
                     title={isOff ? item.memo : (item.warning || undefined)}
                   >
                     <span className={`text-sm font-bold ${dateTextClass}`}>
-                    {formatDate(item.original)}
+                    {formatDate(item.date)}
                   </span>
                   <div className={`h-4 w-[1px] ${isOff ? 'bg-blue-200 dark:bg-blue-700' : 'bg-[#EBE5DD] dark:bg-[#444444]'}`}></div>
                   <span className={`font-medium ${nameTextClass}`}>{item.name}</span>
