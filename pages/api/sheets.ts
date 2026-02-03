@@ -1,9 +1,11 @@
 import { google } from 'googleapis';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { StaffData } from '@/types';
 
-export default async function handler(req, res) {
-  let session = null;
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  let session: any = null;
   
   // 시트 이름 설정
   const SHEET_SUMMARY = '연차계산'; // 요약 정보
@@ -35,7 +37,7 @@ export default async function handler(req, res) {
       const sheets = google.sheets({ version: 'v4', auth });
       const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-      const newData = req.body;
+      const newData: StaffData = req.body;
       // 요약 시트에 들어갈 데이터만 추출 (이름, 직급, 입사일, 발생, 사용, 비고)
       const rows = newData.map(item => [
         item.name, item.role, item.date, item.total, item.used, item.memo
@@ -52,12 +54,12 @@ export default async function handler(req, res) {
         spreadsheetId,
         range: `${SHEET_SUMMARY}!A2`,
         valueInputOption: 'USER_ENTERED',
-        resource: { values: rows },
+        requestBody: { values: rows },
       });
 
       return res.status(200).json({ success: true });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Save Error:", error);
       return res.status(500).json({ error: error.message });
     }
@@ -68,8 +70,8 @@ export default async function handler(req, res) {
   // ============================================================
   if (req.method === 'GET') {
     try {
-      let summaryRows = [];
-      let calendarRows = [];
+      let summaryRows: any[][] = [];
+      let calendarRows: any[][] = [];
       let fetchedViaApi = false;
 
       // --------------------------------------------------------
@@ -100,7 +102,7 @@ export default async function handler(req, res) {
           summaryRows = resSummary.data.values || [];
           calendarRows = resCalendar.data.values || [];
           fetchedViaApi = true;
-        } catch (apiError) {
+        } catch (apiError: any) {
           console.error("Google API Fetch Failed (Falling back to CSV):", apiError.message);
           // API 실패 시 아래 CSV 로직으로 넘어감
         }
@@ -110,13 +112,9 @@ export default async function handler(req, res) {
       // CASE 2: 비로그인 유저 또는 API 실패 시 -> CSV 파싱 (공개 링크)
       // --------------------------------------------------------
       if (!fetchedViaApi) {
-        // [수정됨] 보내주신 시트 ID (URL 중간에 있는 긴 문자열)
         const SHEET_ID = "1dmMlb4IxUQO9AZBVSAgS72cXDJqWDLicx-FL0IzH5Eo";
-        
-        // [수정됨] 보내주신 2026년 시트의 GID
         const GID_CALENDAR = "191374435"; 
 
-        // 구글 시트 내보내기(Export) 주소 형식 사용
         const baseUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 
         // 1번 시트 (연차계산) - gid=0
@@ -143,12 +141,12 @@ export default async function handler(req, res) {
       // --------------------------------------------------------
       
         // 1. 달력 데이터 정리 (이름 -> 날짜 배열 맵 생성)
-      const calendarMap = {};
+      const calendarMap: { [key: string]: { parsed: string; original: string }[] } = {};
       const currentYear = '2026'; // 시트 이름에서 유추하거나 고정
 
       calendarRows.forEach(row => {
         const name = row[0]; // A열: 이름
-        const dates = [];
+        const dates: { parsed: string; original: string }[] = [];
         
         // E열(인덱스 4)부터 끝까지 돌면서 날짜가 있는 셀만 수집
         for (let i = 4; i < row.length; i++) {
@@ -195,14 +193,14 @@ export default async function handler(req, res) {
       });
 
       // 2. 요약 데이터에 달력 데이터 합치기
-      const combinedData = summaryRows.map(row => {
+      const combinedData: StaffData = summaryRows.map(row => {
         const name = row[0] || '';
-        const baseData = {
+        const baseData: any = {
             name: name,
             role: row[1] || '',
             date: row[2] || '',
-            total: row[3] || 0,
-            used: row[4] || 0,
+            total: Number(row[3]) || 0,
+            used: Number(row[4]) || 0,
             memo: row[5] || ''
         };
 
@@ -222,10 +220,10 @@ export default async function handler(req, res) {
 }
 
 // 헬퍼 함수: CSV 파서 (기존 유지)
-function parseCSV(text) {
+function parseCSV(text: string): string[][] {
   if (!text) return [];
-  const rows = [];
-  let currentRow = [];
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
   let currentCell = '';
   let insideQuote = false;
 
