@@ -4,6 +4,21 @@ import { authOptions } from "./auth/[...nextauth]";
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { CalendarPostRequest, CalendarDeleteRequest, CalendarPutRequest } from '@/types';
 
+const normalizeDate = (str: string) => {
+  if (!str) return '';
+  let type = '';
+  if (str.toUpperCase().includes('AM')) type = ' AM';
+  else if (str.toUpperCase().includes('PM')) type = ' PM';
+  
+  const clean = str.replace(/AM|PM/gi, '').replace(/[^0-9]/g, ' ').trim().split(/\s+/);
+  if (clean.length >= 2) {
+    const month = parseInt(clean[clean.length - 2]);
+    const day = parseInt(clean[clean.length - 1]);
+    return `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}${type}`;
+  }
+  return str;
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const SHEET_CALENDAR = '2026년';
 
@@ -62,12 +77,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const rowNum = rowIndex + 1;
       const colLetter = String.fromCharCode(65 + colIndex);
       const range = `${SHEET_CALENDAR}!${colLetter}${rowNum}`;
+      const normalizedDate = normalizeDate(date);
 
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range,
         valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [[date]] }
+        requestBody: { values: [[normalizedDate]] }
       });
 
       return res.status(200).json({ success: true, message: `Added to ${range}` });
@@ -104,8 +120,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         let colIndex = -1;
         const targetRow = rows[rowIndex];
+        const targetDateNormalized = normalizeDate(date);
+
         for (let j = 4; j < targetRow.length; j++) {
-            if (targetRow[j] && targetRow[j].trim() === date.trim()) {
+            if (targetRow[j] && normalizeDate(targetRow[j]) === targetDateNormalized) {
                 colIndex = j;
                 break;
             }
@@ -158,8 +176,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         let colIndex = -1;
         const targetRow = rows[rowIndex];
+        const oldDateNormalized = normalizeDate(oldDate);
+
         for (let j = 4; j < targetRow.length; j++) {
-            if (targetRow[j] && targetRow[j].trim() === oldDate.trim()) {
+            if (targetRow[j] && normalizeDate(targetRow[j]) === oldDateNormalized) {
                 colIndex = j;
                 break;
             }
@@ -170,12 +190,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const rowNum = rowIndex + 1;
         const colLetter = String.fromCharCode(65 + colIndex);
         const range = `${SHEET_CALENDAR}!${colLetter}${rowNum}`;
+        const newDateNormalized = normalizeDate(newDate);
 
         await sheets.spreadsheets.values.update({
             spreadsheetId,
             range,
             valueInputOption: 'USER_ENTERED',
-            requestBody: { values: [[newDate]] }
+            requestBody: { values: [[newDateNormalized]] }
         });
 
         return res.status(200).json({ success: true, message: `Updated ${range}` });

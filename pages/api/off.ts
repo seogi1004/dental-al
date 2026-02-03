@@ -9,7 +9,7 @@ const normalizeToMMDD = (str: string) => {
   if (clean.length >= 2) {
     const month = parseInt(clean[clean.length - 2]);
     const day = parseInt(clean[clean.length - 1]);
-    return `${month}-${day}`;
+    return `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
   }
   return str;
 };
@@ -77,12 +77,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
+      const normalizedDate = normalizeToMMDD(date);
       await sheets.spreadsheets.values.append({
         spreadsheetId,
         range: `${SHEET_OFF}!A:C`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [[name, date, memo || '']]
+          values: [[name, normalizedDate, memo || '']]
         }
       });
       return res.status(200).json({ success: true });
@@ -128,13 +129,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const sheetRow = rowIndexToUpdate + 1;
       const range = `${SHEET_OFF}!B${sheetRow}:C${sheetRow}`;
+      const normalizedNewDate = normalizeToMMDD(newDate);
 
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [[newDate, memo || '']]
+          values: [[normalizedNewDate, memo || '']]
         }
       });
 
