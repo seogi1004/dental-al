@@ -735,7 +735,7 @@ export default function DentalLeaveApp() {
                                         총 <span className="text-lg text-gray-900 dark:text-white font-bold mx-1 print:text-base">{formTotalDays || '0'}</span> 일간
                                     </span>
                                     <span className={`hidden ${isOneDayOrLess ? 'print:inline ml-2 text-lg font-bold' : ''}`}>
-                                        ( {startType === 'FULL' ? '종일' : startType === 'AM' ? '오전' : '오후'} )
+                                        ({startType === 'FULL' ? '종일' : startType === 'AM' ? '오전' : '오후'})
                                     </span>
                                 </div>
                             </>
@@ -759,7 +759,7 @@ export default function DentalLeaveApp() {
         </table>
         
         <div className="text-center mt-16 print:mt-24">
-            <p className="text-lg mb-8 print:mb-16 font-medium font-serif text-gray-800 dark:text-[#E0E0E0]">2026년 &nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;일</p>
+            <p className="text-xl mb-8 print:mb-16 font-medium font-serif text-gray-800 dark:text-[#E0E0E0]">2026년 &nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;일</p>
             <div className="flex justify-center items-center gap-4 mb-16 print:mb-20">
                 <span className="text-lg font-bold font-serif text-gray-800 dark:text-[#E0E0E0]">신 청 인 :</span>
                 <input type="text" className="text-xl text-center border-b border-gray-800 dark:border-gray-500 w-32 outline-none font-serif bg-transparent" />
