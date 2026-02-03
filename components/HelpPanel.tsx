@@ -27,9 +27,9 @@ export default function HelpPanel() {
               <span>👤 <strong className="text-[#A4907C] dark:text-[#C4B09C]">사용자</strong></span>
               <span>현황 및 달력 조회</span>
             </p>
-            <p className="pt-1 text-[10px] text-gray-400 border-t border-dashed border-gray-200 dark:border-gray-700 mt-1">
-              * 권한 요청: 최지원에게 구글 이메일 전달
-            </p>
+          </div>
+          <div className="mt-2 pt-2 border-t border-dashed border-[#F0EAE4] dark:border-[#333333] text-[10px] text-[#8D7B68] dark:text-[#A4907C] text-center">
+            * 편집 권한 요청: 최지원에게 구글 계정(이메일) 전달
           </div>
         </div>
 
