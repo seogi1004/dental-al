@@ -28,8 +28,13 @@ export default function HelpPanel() {
               <span>현황 및 달력 조회</span>
             </p>
           </div>
-          <div className="mt-2 pt-2 border-t border-dashed border-[#F0EAE4] dark:border-[#333333] text-[10px] text-[#8D7B68] dark:text-[#A4907C] text-center">
-            * 편집 권한 요청: 최지원에게 구글 계정(이메일) 전달
+          <div className="mt-2 pt-2 border-t border-dashed border-[#F0EAE4] dark:border-[#333333] space-y-1 text-center">
+            <p className="text-[10px] text-[#5C5552] dark:text-[#A0A0A0] opacity-80">
+              * 모든 데이터는 구글 스프레드시트로 관리됩니다.
+            </p>
+            <p className="text-[10px] text-[#8D7B68] dark:text-[#A4907C]">
+              * 편집 권한 요청: 최지원에게 구글 계정(이메일) 전달
+            </p>
           </div>
         </div>
 
