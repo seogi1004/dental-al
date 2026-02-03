@@ -262,8 +262,23 @@ export default function DentalLeaveApp() {
 
   const handleBlur = () => {
     if (!session?.isAdmin) return;
+
+    // isNew 상태가 있는 항목이 있으면 제거하여 편집 모드 종료 (readOnly 적용)
+    let finalData = staffData;
+    if (staffData.some(staff => staff.isNew)) {
+      const updatedData = staffData.map(staff => {
+        if (staff.isNew) {
+          const { isNew, ...rest } = staff;
+          return rest;
+        }
+        return staff;
+      });
+      setStaffData(updatedData);
+      finalData = updatedData;
+    }
+
     if (saveTimeout) clearTimeout(saveTimeout);
-    saveSheetData(staffData);
+    saveSheetData(finalData);
   };
 
   const addStaff = () => {
