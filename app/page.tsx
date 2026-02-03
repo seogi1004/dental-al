@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Printer, Plus, Calendar, User, FileText, 
-  Trash2, Moon, Sun, PanelRightOpen, PanelRightClose
+  Trash2, Moon, Sun, PanelRightOpen, PanelRightClose,
+  Github
 } from 'lucide-react';
 
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -772,6 +773,22 @@ export default function DentalLeaveApp() {
   </div>
 )}
        </div>
+      
+      <div className="mt-6 text-center text-xs text-[#8D7B68] dark:text-[#A4907C] opacity-60 print:hidden pb-6">
+          <p className="md:hidden">© {new Date().getFullYear()} @alvin</p>
+          <div className="hidden md:flex justify-center items-center gap-3">
+            <p>© {new Date().getFullYear()} @alvin. All rights reserved.</p>
+            <a 
+              href="https://github.com/seogi1004/dental-al" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              aria-label="GitHub Repository"
+              className="hover:text-[#5C5552] dark:hover:text-[#E0E0E0] transition-colors"
+            >
+              <Github className="w-4 h-4" />
+            </a>
+          </div>
+      </div>
     </div>
   );
 }

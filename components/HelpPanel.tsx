@@ -28,11 +28,11 @@ export default function HelpPanel() {
               <span>현황 및 달력 조회</span>
             </p>
           </div>
-          <div className="mt-2 pt-2 border-t border-dashed border-[#F0EAE4] dark:border-[#333333] space-y-1 text-center">
-            <p className="text-[10px] text-[#5C5552] dark:text-[#A0A0A0] opacity-80">
+          <div className="mt-2 pt-2 border-t border-dashed border-[#F0EAE4] dark:border-[#333333] space-y-1 text-left">
+            <p className="text-[10px] text-[#5C5552] dark:text-[#A0A0A0] opacity-80 pl-1">
               * 모든 데이터는 구글 스프레드시트로 관리됩니다.
             </p>
-            <p className="text-[10px] text-[#8D7B68] dark:text-[#A4907C]">
+            <p className="text-[10px] text-[#8D7B68] dark:text-[#A4907C] pl-1">
               * 편집 권한 요청: 최지원에게 구글 계정(이메일) 전달
             </p>
           </div>
@@ -105,7 +105,7 @@ export default function HelpPanel() {
             <AlertTriangle className="w-4 h-4" /> 주의사항
           </h4>
           <ul className="list-disc pl-4 space-y-1.5 text-xs text-[#5C5552] dark:text-[#A0A0A0]">
-            <li>데이터 동기화는 약 1초 소요됩니다.</li>
+            <li>데이터 수정 시 <strong>1초 후 자동 저장</strong>됩니다.</li>
             <li>직원 이름은 시트 연결 기준이므로 <span className="text-red-500 font-bold">수정 불가</span>합니다.</li>
             <li><span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1 rounded font-bold">중복</span> 입력 시 빨간색으로 표시됩니다.</li>
             <li><span className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1 rounded font-bold">형식 오류</span> 시 노란색 경고가 뜹니다.</li>
