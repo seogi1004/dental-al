@@ -447,9 +447,9 @@ export default function DentalLeaveApp() {
 
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.text} p-4 md:p-8 flex justify-center font-sans transition-colors duration-300`}>
-      <div className={`w-full max-w-6xl ${theme.paper} rounded-3xl shadow-xl border ${theme.border} min-h-[850px] transition-colors duration-300`}>
+      <div className={`w-full max-w-6xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px] transition-colors duration-300`}>
         
-        <div className="bg-[#8D7B68] dark:bg-[#5C4A3A] p-6 text-white flex flex-col md:flex-row justify-between items-center shadow-md print:hidden transition-colors duration-300 rounded-t-3xl">
+        <div className="bg-[#8D7B68] dark:bg-[#5C4A3A] p-6 text-white flex flex-col md:flex-row justify-between items-center shadow-md print:hidden transition-colors duration-300">
             <h1 className="text-2xl font-bold flex items-center gap-3 tracking-wide">
                 <span className="text-[#FDFBF7]">더데이치과</span> 
                 <span className="text-[#EBE5DD] font-light text-lg opacity-80 hidden md:inline">| 연차 관리 시스템</span>
@@ -770,9 +770,6 @@ export default function DentalLeaveApp() {
             <h3 className="text-3xl font-bold tracking-[0.2em] font-serif text-gray-900 dark:text-[#E0E0E0]">더데이치과 귀중</h3>
         </div>
     </div>
-  </div>
-)}
-      
       <div className="mt-6 text-center text-xs text-[#8D7B68] dark:text-[#A4907C] opacity-60 print:hidden pb-6">
           <p className="md:hidden">© {new Date().getFullYear()} Alvin</p>
           <div className="hidden md:flex justify-center items-center gap-1.5">
@@ -788,6 +785,8 @@ export default function DentalLeaveApp() {
             </a>
           </div>
       </div>
+  </div>
+)}
     </div>
   </div>
   );
