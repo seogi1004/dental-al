@@ -668,6 +668,7 @@ export default function DentalLeaveApp() {
                 <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-3">
                     {(() => {
                         const isSameDay = formStartDate && formEndDate && formStartDate === formEndDate;
+                        const isOneDayOrLess = parseFloat(formTotalDays || '0') <= 1;
                         return (
                             <>
                                 <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4 print:gap-2">
@@ -682,7 +683,7 @@ export default function DentalLeaveApp() {
                                             onChange={(e) => setFormStartDate(e.target.value)} 
                                             className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:border-none print:bg-transparent print:px-1 print:py-1 print:mb-1 print:text-xs" 
                                         />
-                                        <div className="flex gap-3 print:gap-1.5">
+                                        <div className="flex gap-3 print:gap-1.5 print:hidden">
                                             {[
                                                 { value: 'FULL', label: '종일' },
                                                 { value: 'AM', label: '오전' },
@@ -709,7 +710,7 @@ export default function DentalLeaveApp() {
                                             onChange={(e) => setFormEndDate(e.target.value)} 
                                             className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:border-none print:bg-transparent print:px-1 print:py-1 print:mb-1 print:text-xs" 
                                         />
-                                        <div className="flex gap-3 print:gap-1.5">
+                                        <div className="flex gap-3 print:gap-1.5 print:hidden">
                                             {[
                                                 { value: 'FULL', label: '종일' },
                                                 { value: 'AM', label: '오전' },
@@ -729,8 +730,13 @@ export default function DentalLeaveApp() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200 print:mt-2">
-                                    총 <span className="text-lg text-gray-900 dark:text-white font-bold mx-1 print:text-base">{formTotalDays || '0'}</span> 일간
+                                <div className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200 print:mt-2 flex items-center">
+                                    <span className={`whitespace-nowrap ${isOneDayOrLess ? 'print:hidden' : ''}`}>
+                                        총 <span className="text-lg text-gray-900 dark:text-white font-bold mx-1 print:text-base">{formTotalDays || '0'}</span> 일간
+                                    </span>
+                                    <span className={`hidden ${isOneDayOrLess ? 'print:inline ml-2 text-lg font-bold' : ''}`}>
+                                        ( {startType === 'FULL' ? '종일' : startType === 'AM' ? '오전' : '오후'} )
+                                    </span>
                                 </div>
                             </>
                         );
