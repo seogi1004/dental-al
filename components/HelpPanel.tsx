@@ -16,7 +16,7 @@ export default function HelpPanel() {
             1. 권한 안내
           </h4>
           <ul className="list-disc pl-4 space-y-1">
-            <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">관리자</strong>: 연차 추가/수정/삭제, 직원 관리 <span className="text-xs text-green-600">(편집 권한 필요)</span></li>
+            <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">관리자</strong>: 연차 및 오프 추가/수정/삭제, 직원 관리 <span className="text-xs text-green-600">(편집 권한 필요)</span></li>
             <li><strong className="text-[#A4907C] dark:text-[#C4B09C]">일반 사용자</strong>: 달력 조회만 가능</li>
           </ul>
         </div>
@@ -61,6 +61,8 @@ export default function HelpPanel() {
               달력 날짜 우측 상단의 <span className="font-bold text-blue-500">OFF</span> 버튼을 눌러 정기 휴무를 등록하세요.
               <br className="mb-1" />
               수정/삭제하려면 달력에 표시된 파란색 오프 박스를 클릭하세요.
+              <br />
+              <span className="text-[10px] opacity-80">* 오프 등록 및 수정은 관리자만 가능합니다.</span>
             </p>
           </div>
         </div>
