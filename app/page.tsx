@@ -447,7 +447,7 @@ export default function DentalLeaveApp() {
 
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.text} p-4 md:p-8 flex justify-center font-sans transition-colors duration-300`}>
-      <div className={`w-full max-w-6xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px] transition-colors duration-300`}>
+      <div className={`w-full max-w-6xl ${theme.paper} rounded-3xl shadow-xl overflow-hidden border ${theme.border} min-h-[850px] transition-colors duration-300 flex flex-col`}>
         
         <div className="bg-[#8D7B68] dark:bg-[#5C4A3A] p-6 text-white flex flex-col md:flex-row justify-between items-center shadow-md print:hidden transition-colors duration-300">
             <h1 className="text-2xl font-bold flex items-center gap-3 tracking-wide">
@@ -601,7 +601,7 @@ export default function DentalLeaveApp() {
          )}
 
           {activeTab === 'form' && (
-  <div className="p-8 bg-[#FDFBF7] dark:bg-[#121212] flex flex-col items-center transition-colors duration-300">
+  <div className="p-8 bg-[#FDFBF7] dark:bg-[#121212] flex flex-col items-center transition-colors duration-300 flex-1">
      <div className="w-full flex justify-end mb-6 print:hidden">
         <button onClick={() => window.print()} className={`flex items-center gap-2 ${theme.primary} text-white px-5 py-2.5 rounded-xl transition shadow-md text-sm font-bold`}>
             <Printer className="w-4 h-4" /> 인쇄하기
