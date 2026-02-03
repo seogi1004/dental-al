@@ -9,10 +9,15 @@
   --font-pretendard: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
 }
 
-/* 기본 배경색 설정 (깜빡임 방지) */
+/* 기본 배경색 설정 (깜빡임 방지 및 오버스크롤 색상 통일) */
 body {
   background-color: #FDFBF7;
   font-family: var(--font-pretendard);
+  transition: background-color 0.3s ease;
+}
+
+.dark body {
+  background-color: #121212;
 }
 
 .font-pretendard {
