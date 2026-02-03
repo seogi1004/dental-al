@@ -255,7 +255,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       // 2. 요약 데이터에 달력 데이터 합치기
-      const combinedData: StaffData = summaryRows.map(row => {
+      const combinedData: StaffData = summaryRows
+        .filter(row => row[2] && row[2].trim().length > 0) // 입사일(row[2])이 없는 행 제외 (GID 메타데이터 등 필터링)
+        .map(row => {
         const name = row[0] || '';
         const baseData: any = {
             name: name,

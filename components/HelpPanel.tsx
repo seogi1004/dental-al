@@ -20,6 +20,7 @@ export default function HelpPanel() {
             <ul className="list-disc pl-4 space-y-1">
               <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">관리자</strong>: 연차 및 오프 추가/수정/삭제, 직원 관리 <span className="text-xs text-green-600">(편집 권한 필요)</span></li>
               <li><strong className="text-[#A4907C] dark:text-[#C4B09C]">일반 사용자</strong>: 달력 조회만 가능</li>
+              <li className="text-[11px] text-[#A4907C] mt-1">* 편집 권한 요청: 최지원에게 구글 계정(이메일) 전달</li>
             </ul>
           </div>
 
