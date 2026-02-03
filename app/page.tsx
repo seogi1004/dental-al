@@ -534,7 +534,7 @@ export default function DentalLeaveApp() {
                                   />
                              </div>
                              <div className="col-span-2">
-                                  {invalidLeaves.length > 0 || sundayLeaves.length > 0 ? (
+                                  {(session as any)?.isAdmin && (invalidLeaves.length > 0 || sundayLeaves.length > 0) ? (
                                      <WarningBanner 
                                        session={session as any} 
                                        invalidLeaves={invalidLeaves} 
