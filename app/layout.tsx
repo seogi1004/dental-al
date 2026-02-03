@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   description: "구글 시트 연동 연차 관리 시스템",
   manifest: "/manifest.json",
   icons: {
+    icon: "/favicon.ico",
     apple: "/icons/icon-192x192.png",
   },
 };
