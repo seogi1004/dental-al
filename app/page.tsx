@@ -552,10 +552,10 @@ export default function DentalLeaveApp() {
         </button>
     </div>
 
-    <div className="bg-white dark:bg-[#1E1E1E] p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] dark:text-[#E0E0E0] relative rounded-sm print:shadow-none print:w-full print:h-[297mm] print:m-0 print:p-[10mm] print-form-container transition-colors duration-300">
-        <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 tracking-widest text-[#222] dark:text-[#E0E0E0] font-serif">연차(휴가) 신청서</h2>
+    <div className="bg-white dark:bg-[#1E1E1E] p-[15mm] w-[210mm] min-h-[297mm] shadow-lg mx-auto text-[#333] dark:text-[#E0E0E0] relative rounded-sm print:shadow-none print:w-full print:h-[297mm] print:m-0 print:p-[10mm] print:rounded-none print:border-none print-form-container transition-colors duration-300">
+        <h2 className="text-3xl font-bold text-center underline underline-offset-8 mb-10 print:mb-6 tracking-widest text-[#222] dark:text-[#E0E0E0] font-serif">연차(휴가) 신청서</h2>
         
-        <div className="flex justify-end mb-8">
+        <div className="flex justify-end mb-8 print:mb-4">
             <table className="border border-gray-800 dark:border-gray-500 text-center text-sm w-64">
                 <tbody>
                 <tr>
@@ -573,7 +573,7 @@ export default function DentalLeaveApp() {
             </table>
         </div>
 
-        <table className="w-full border-collapse border border-gray-800 dark:border-gray-500 mb-6 text-sm">
+        <table className="w-full border-collapse border border-gray-800 dark:border-gray-500 mb-6 print:mb-4 text-sm">
             <tbody>
             <tr>
                 <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 w-28 font-bold text-gray-800 dark:text-[#E0E0E0]">성 명</th>
@@ -604,9 +604,9 @@ export default function DentalLeaveApp() {
             <tr>
                 <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 font-bold text-gray-800 dark:text-[#E0E0E0]">기 간</th>
                 <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-3">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-1 mb-2 text-sm print:text-xs">
                         <input type="date" className="border dark:border-gray-500 px-2 py-1 rounded border-gray-300 bg-transparent" /> ~ <input type="date" className="border dark:border-gray-500 px-2 py-1 rounded border-gray-300 bg-transparent" />
-                        <span className="ml-4 whitespace-nowrap">( 총 <input type="text" className="w-10 text-center border-b border-gray-800 dark:border-gray-500 outline-none bg-transparent" /> 일간 )</span>
+                        <span className="ml-2 whitespace-nowrap flex items-center">( 총 <input type="text" className="w-8 text-center border-b border-gray-800 dark:border-gray-500 outline-none bg-transparent mx-1" /> 일간 )</span>
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">※ 반차 시간: <input type="time" className="border dark:border-gray-500 px-1 rounded bg-transparent"/> ~ <input type="time" className="border dark:border-gray-500 px-1 rounded bg-transparent"/></div>
                 </td>
@@ -626,9 +626,9 @@ export default function DentalLeaveApp() {
             </tbody>
         </table>
         
-        <div className="text-center mt-16">
-            <p className="text-lg mb-8 font-medium font-serif text-gray-800 dark:text-[#E0E0E0]">2026년 &nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;일</p>
-            <div className="flex justify-center items-center gap-4 mb-16">
+        <div className="text-center mt-16 print:mt-8">
+            <p className="text-lg mb-8 print:mb-4 font-medium font-serif text-gray-800 dark:text-[#E0E0E0]">2026년 &nbsp;&nbsp;&nbsp;&nbsp;월 &nbsp;&nbsp;&nbsp;&nbsp;일</p>
+            <div className="flex justify-center items-center gap-4 mb-16 print:mb-8">
                 <span className="text-lg font-bold font-serif text-gray-800 dark:text-[#E0E0E0]">신 청 인 :</span>
                 <input type="text" className="text-xl text-center border-b border-gray-800 dark:border-gray-500 w-32 outline-none font-serif bg-transparent" />
                 <span className="text-lg font-bold font-serif text-gray-800 dark:text-[#E0E0E0]">(인)</span>
