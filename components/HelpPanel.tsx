@@ -1,121 +1,121 @@
 'use client';
 
-import { FileText } from 'lucide-react';
+import { FileText, Shield, MousePointerClick, AlertTriangle, Info, CheckCircle2 } from 'lucide-react';
 
 export default function HelpPanel() {
   return (
-    <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-2xl shadow-sm border border-[#F0EAE4] dark:border-[#333333] sticky top-6 h-fit transition-colors duration-300">
-      <div className="flex justify-between items-center mb-4">
+    <div className="bg-white dark:bg-[#1E1E1E] p-5 rounded-2xl shadow-sm border border-[#F0EAE4] dark:border-[#333333] sticky top-6 h-fit transition-colors duration-300">
+      <div className="flex justify-between items-center mb-5">
         <h3 className="font-bold text-lg text-[#5C5552] dark:text-[#E0E0E0] flex items-center gap-2">
-          💡 사용 가이드
+          <Info className="w-5 h-5 text-[#8D7B68]" /> 사용 가이드
         </h3>
       </div>
       
-      <div className="space-y-6 text-sm text-[#5C5552] dark:text-[#A0A0A0]">
+      <div className="space-y-6">
         
-          <div>
-            <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2 flex items-center gap-2">
-              1. 권한 안내
-            </h4>
-            <ul className="list-disc pl-4 space-y-1">
-              <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">관리자</strong>: 연차 및 오프 추가/수정/삭제, 직원 관리 <span className="text-xs text-green-600">(편집 권한 필요)</span></li>
-              <li><strong className="text-[#A4907C] dark:text-[#C4B09C]">일반 사용자</strong>: 달력 조회만 가능</li>
-              <li className="text-[11px] text-[#A4907C] mt-1">* 편집 권한 요청: 최지원에게 구글 계정(이메일) 전달</li>
-            </ul>
-          </div>
-
-          <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
-
-          <div>
-            <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2">
-              2. 연차 등록 및 관리
-            </h4>
-            <p className="mb-2">두 가지 방법으로 가능합니다:</p>
-            <ul className="list-disc pl-4 space-y-1 mb-3 text-xs">
-              <li><strong>웹에서 추가</strong>: 달력 날짜에 마우스를 올리고 <span className="bg-[#EBE5DD] dark:bg-[#444444] px-1 rounded font-bold text-[#8D7B68] dark:text-[#A4907C]">+</span> 버튼 클릭</li>
-              <li><strong>구글 시트</strong>: 빈 칸에 날짜 직접 입력 (예: 01/15)</li>
-            </ul>
-            <div className="bg-[#FDFBF7] dark:bg-[#121212] p-3 rounded-lg border border-[#F0EAE4] dark:border-[#333333] space-y-2 font-mono text-xs mb-3">
-              <div className="flex justify-between">
-                <span>종일 연차</span>
-                <span className="font-bold text-[#5C5552] dark:text-[#E0E0E0]">01/15</span>
-              </div>
-              <div className="flex justify-between text-yellow-700 dark:text-yellow-400">
-                <span>오전 반차</span>
-                <span className="font-bold">01/15 AM</span>
-              </div>
-              <div className="flex justify-between text-orange-700 dark:text-orange-400">
-                <span>오후 반차</span>
-                <span className="font-bold">01/15 PM</span>
-              </div>
-            </div>
-            <p className="text-xs text-[#5C5552] dark:text-[#A0A0A0] bg-[#F2EBE5] dark:bg-[#2D2D2D] p-2 rounded">
-              💡 <strong>Tip:</strong> 날짜 셀에 마우스를 올리면 + 버튼이 나타납니다. 클릭하여 <strong>수정/삭제</strong>도 가능합니다!
+        {/* 1. 권한 안내 */}
+        <div>
+          <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2 flex items-center gap-1.5 text-sm">
+            <Shield className="w-4 h-4" /> 권한 안내
+          </h4>
+          <div className="text-xs space-y-1.5 text-[#5C5552] dark:text-[#A0A0A0]">
+            <p className="flex justify-between">
+              <span>👑 <strong className="text-[#5C5552] dark:text-[#E0E0E0]">관리자</strong></span>
+              <span>연차/오프 관리, 직원 수정</span>
+            </p>
+            <p className="flex justify-between">
+              <span>👤 <strong className="text-[#A4907C] dark:text-[#C4B09C]">사용자</strong></span>
+              <span>현황 및 달력 조회</span>
+            </p>
+            <p className="pt-1 text-[10px] text-gray-400 border-t border-dashed border-gray-200 dark:border-gray-700 mt-1">
+              * 권한 요청: 최지원에게 구글 이메일 전달
             </p>
           </div>
-
-          <div className="flex items-start gap-3 p-3 bg-[#F9F5F1] dark:bg-[#2C2C2C] rounded-xl border border-[#F0EAE4] dark:border-[#333333]">
-            <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-400">
-              <span className="text-xs font-bold">OFF</span>
-            </div>
-            <div>
-              <h4 className="font-bold text-[#5C5552] dark:text-[#E0E0E0] text-sm mb-1">오프(Off) 관리</h4>
-              <p className="text-xs text-[#8D7B68] dark:text-[#A0A0A0] leading-relaxed">
-                달력 날짜 우측 상단의 <span className="font-bold text-blue-500">OFF</span> 버튼을 눌러 정기 휴무를 등록하세요.
-                <br className="mb-1" />
-                수정/삭제하려면 달력에 표시된 파란색 오프 박스를 클릭하세요.
-                <br />
-                <span className="text-[10px] opacity-80">* 오프 등록 및 수정은 관리자만 가능합니다.</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
-
-          <div>
-            <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2">
-              3. 데이터 확인 및 경고
-            </h4>
-            <ul className="list-disc pl-4 space-y-1">
-              <li><span className="text-red-500 font-bold">빨간 배경</span>: 같은 날 중복 입력 시 표시됩니다.</li>
-              <li><span className="text-amber-500 font-bold">⚠️ 스프레드시트 확인</span>: 날짜 형식 오류 시 우측 상단에 표시됩니다.</li>
-              <li>상세 오류 목록은 달력 위에서 확인 가능합니다.</li>
-            </ul>
-          </div>
-
-          <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
-
-          <div>
-            <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2">
-              4. 주의사항
-            </h4>
-            <ul className="list-disc pl-4 space-y-1">
-              <li>구글 시트의 <strong>편집 권한</strong>이 있어야 관리자 기능이 활성화됩니다.</li>
-              <li>직원 이름은 <strong>수정 불가</strong>합니다. (데이터 연결 기준)</li>
-              <li>오타 발생 시 삭제 후 다시 추가해주세요.</li>
-              <li>시트 데이터는 <strong>1초 후 자동 동기화</strong>됩니다.</li>
-            </ul>
-          </div>
-
-          <div className="mt-6 border-t border-[#F0EAE4] dark:border-[#333333] pt-4">
-            <h4 className="font-bold text-[#5C5552] dark:text-[#E0E0E0] text-sm mb-2 flex items-center gap-2">
-              💡 알아두면 좋은 팁
-            </h4>
-            <ul className="text-xs text-[#8D7B68] dark:text-[#A0A0A0] space-y-1 list-disc pl-4">
-              <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">연차</strong>는 연간 발생 일수에서 차감되지만, <strong className="text-[#5C5552] dark:text-[#E0E0E0]">오프</strong>는 차감되지 않는 정기 휴무입니다.</li>
-              <li>상단 <strong className="text-[#5C5552] dark:text-[#E0E0E0]">신청서</strong> 탭에서 연차신청서를 바로 인쇄할 수 있습니다.</li>
-            </ul>
-          </div>
-
-          <a 
-            href="https://docs.google.com/spreadsheets/d/1dmMlb4IxUQO9AZBVSAgS72cXDJqWDLicx-FL0IzH5Eo/edit#gid=191374435"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 w-full flex items-center justify-center gap-2 bg-[#8D7B68] dark:bg-[#6D5B4B] hover:bg-[#7A6A59] dark:hover:bg-[#5C4A3A] text-white px-4 py-3 rounded-xl transition-colors font-bold text-sm shadow-sm"
-          >
-            <FileText className="w-4 h-4" /> 구글 시트 바로가기
-          </a>
         </div>
+
+        <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
+
+        {/* 2. 연차 vs 오프 */}
+        <div>
+           <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2 flex items-center gap-1.5 text-sm">
+            <CheckCircle2 className="w-4 h-4" /> 연차 vs 오프
+          </h4>
+          <div className="grid grid-cols-2 gap-2 text-xs text-center">
+            <div className="bg-[#FDFBF7] dark:bg-[#252525] p-2 rounded border border-[#EBE5DD] dark:border-[#444444]">
+              <div className="font-bold mb-1">🏖️ 연차</div>
+              <div className="text-[10px] text-gray-500">연차 일수 <span className="text-red-500 font-bold">차감 O</span></div>
+            </div>
+            <div className="bg-[#F0F7FF] dark:bg-[#1A202C] p-2 rounded border border-blue-100 dark:border-blue-900">
+              <div className="font-bold mb-1">🔵 오프</div>
+              <div className="text-[10px] text-gray-500">연차 일수 <span className="text-blue-500 font-bold">차감 X</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
+
+        {/* 3. 사용 방법 */}
+        <div>
+          <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-3 flex items-center gap-1.5 text-sm">
+            <MousePointerClick className="w-4 h-4" /> 사용 방법
+          </h4>
+          
+          <div className="space-y-3 text-xs text-[#5C5552] dark:text-[#A0A0A0]">
+            <div>
+              <strong className="block mb-1 text-[#5C5552] dark:text-[#E0E0E0]">1. 등록하기</strong>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>달력 날짜의 <span className="bg-[#EBE5DD] dark:bg-[#444444] px-1 rounded font-bold text-[#8D7B68] dark:text-[#A4907C] text-[10px]">+</span> 버튼 (연차)</li>
+                <li>달력 날짜의 <span className="text-blue-500 font-bold text-[10px]">OFF</span> 버튼 (오프)</li>
+                <li>또는 구글 시트에 날짜 직접 입력</li>
+              </ul>
+            </div>
+            
+            <div>
+              <strong className="block mb-1 text-[#5C5552] dark:text-[#E0E0E0]">2. 수정/삭제</strong>
+              <p className="pl-1">등록된 연차/오프 박스를 클릭하세요.</p>
+            </div>
+
+            <div className="bg-[#FDFBF7] dark:bg-[#121212] p-2.5 rounded-lg border border-[#F0EAE4] dark:border-[#333333] space-y-1.5 font-mono text-[11px] mt-2">
+              <div className="flex justify-between items-center">
+                <span>종일</span>
+                <span className="font-bold text-[#5C5552] dark:text-[#E0E0E0] bg-white dark:bg-[#333] px-1 rounded">01/15</span>
+              </div>
+              <div className="flex justify-between items-center text-yellow-700 dark:text-yellow-400">
+                <span>오전</span>
+                <span className="font-bold bg-white dark:bg-[#333] px-1 rounded">01/15 AM</span>
+              </div>
+              <div className="flex justify-between items-center text-orange-700 dark:text-orange-400">
+                <span>오후</span>
+                <span className="font-bold bg-white dark:bg-[#333] px-1 rounded">01/15 PM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="h-px bg-[#F0EAE4] dark:bg-[#333333]"></div>
+
+        {/* 4. 주의사항 */}
+        <div>
+          <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2 flex items-center gap-1.5 text-sm">
+            <AlertTriangle className="w-4 h-4" /> 주의사항
+          </h4>
+          <ul className="list-disc pl-4 space-y-1.5 text-xs text-[#5C5552] dark:text-[#A0A0A0]">
+            <li>데이터 동기화는 약 1초 소요됩니다.</li>
+            <li>직원 이름은 시트 연결 기준이므로 <span className="text-red-500 font-bold">수정 불가</span>합니다.</li>
+            <li><span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1 rounded font-bold">중복</span> 입력 시 빨간색으로 표시됩니다.</li>
+            <li><span className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1 rounded font-bold">형식 오류</span> 시 노란색 경고가 뜹니다.</li>
+          </ul>
+        </div>
+
+        <a 
+          href="https://docs.google.com/spreadsheets/d/1dmMlb4IxUQO9AZBVSAgS72cXDJqWDLicx-FL0IzH5Eo/edit#gid=191374435"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full text-center bg-[#8D7B68] dark:bg-[#6D5B4B] hover:bg-[#7A6A59] dark:hover:bg-[#5C4A3A] text-white px-4 py-3 rounded-xl transition-colors font-bold text-sm shadow-sm flex items-center justify-center gap-2"
+        >
+          <FileText className="w-4 h-4" /> 구글 시트 바로가기
+        </a>
+      </div>
     </div>
   );
 }
