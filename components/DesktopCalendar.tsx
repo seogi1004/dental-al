@@ -206,9 +206,9 @@ export default function DesktopCalendar({
     if (!session?.isAdmin) return;
 
     const staffNames = staffData.map(s => s.name).join(', ');
-    const name = prompt(`오프를 추가할 직원 이름:
+    const name = prompt(`오프를 추가할 직원 이름을 입력하세요:
 
-${staffNames}`);
+현재 직원: ${staffNames}`);
     if (!name) return;
     
     const staff = staffData.find(s => s.name === name.trim());

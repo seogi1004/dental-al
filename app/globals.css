@@ -24,5 +24,14 @@ body {
   body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    background-color: white !important; /* 배경 흰색 강제 */
+    background-image: none !important;  /* 그라데이션 제거 */
+  }
+
+  /* 모든 컨테이너 배경/그림자 제거 */
+  div, section, article, main {
+    background-color: white !important;
+    background-image: none !important;
+    box-shadow: none !important;
   }
 }
