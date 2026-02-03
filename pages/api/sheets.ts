@@ -29,6 +29,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: '데이터를 저장하려면 로그인이 필요합니다.' });
     }
 
+    if (!session?.isAdmin) {
+      return res.status(403).json({ error: 'Permission denied. Admin only.' });
+    }
+
     try {
       const auth = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,

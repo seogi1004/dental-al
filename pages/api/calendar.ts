@@ -27,6 +27,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
   if (req.method === 'POST') {
+    if (!session?.isAdmin) {
+      return res.status(403).json({ error: 'Permission denied. Admin only.' });
+    }
     try {
       const { name, date }: CalendarPostRequest = req.body;
       if (!name || !date) return res.status(400).json({ error: 'Missing name or date' });
@@ -75,6 +78,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'DELETE') {
+    if (!session?.isAdmin) {
+      return res.status(403).json({ error: 'Permission denied. Admin only.' });
+    }
     try {
         const { name, date }: CalendarDeleteRequest = req.body;
         if (!name || !date) return res.status(400).json({ error: 'Missing name or date' });
@@ -126,6 +132,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PUT') {
+    if (!session?.isAdmin) {
+      return res.status(403).json({ error: 'Permission denied. Admin only.' });
+    }
     try {
         const { name, oldDate, newDate }: CalendarPutRequest = req.body;
         if (!name || !oldDate || !newDate) return res.status(400).json({ error: 'Missing params' });

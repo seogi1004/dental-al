@@ -37,7 +37,7 @@ export const useSheetData = (session: any): UseSheetDataReturn => {
       setLoading(false);
       setTimeout(() => setStatusMsg(''), 3000);
     }
-  }, []);
+  }, [session?.accessToken]);
 
   useEffect(() => {
     fetchSheetData();
