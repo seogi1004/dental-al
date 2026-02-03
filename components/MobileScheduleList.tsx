@@ -149,14 +149,20 @@ export default function MobileScheduleList({
       if (y && m && d) displayDate = `${m}/${d}`;
     } catch(e) {}
 
-    const newDateInput = prompt(`날짜를 수정하시겠습니까? (MM/DD 형식)`, displayDate);
+    const newDateInput = prompt(`오프 날짜를 수정하세요 (MM/DD 형식):
+예: 01/15`, displayDate);
     
     if (!newDateInput || newDateInput === displayDate) return;
 
-    const newMemo = prompt('비고를 입력하세요 (선택사항):', memo || '');
+    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])$/;
+    if (!datePattern.test(newDateInput.trim())) {
+      alert(`올바른 날짜 형식으로 입력해주세요. (MM/DD)
+예: 01/15`);
+      return;
+    }
       
     try {
-      await updateOff(name, date, newDateInput, newMemo || undefined);
+      await updateOff(name, date, newDateInput.trim(), memo);
       alert('오프가 수정되었습니다.');
       onRefresh();
     } catch (error: any) {
