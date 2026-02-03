@@ -184,33 +184,18 @@ export default function DesktopCalendar({
   const handleOffClick = async (name: string, originalDate: string) => {
     if (!session?.isAdmin) return;
 
-    const action = prompt(`${name}님의 오프 (${originalDate}) 관리
+    const newDate = prompt(`${name}님의 오프 (${originalDate}) 수정
 
-1. 수정
-2. 삭제`, "1");
-    if (!action) return;
-
-    if (action === "2") {
-      if (confirm(`${name}님의 오프를 삭제하시겠습니까?`)) {
-        try {
-          await deleteOff(name, originalDate);
-          onRefresh();
-        } catch (e: any) {
-          if (!handleApiError(e)) {
-            alert("삭제 실패: " + e.message);
-          }
-        }
-      }
-    } else if (action === "1") {
-      const newDate = prompt("수정할 날짜 (MM/DD):", originalDate);
-      if (!newDate || newDate === originalDate) return;
-      try {
-        await updateOff(name, originalDate, newDate);
-        onRefresh();
-      } catch (e: any) {
-        if (!handleApiError(e)) {
-          alert("수정 실패: " + e.message);
-        }
+새로운 날짜를 입력하세요 (MM/DD):`, originalDate);
+    
+    if (!newDate || newDate === originalDate) return;
+    
+    try {
+      await updateOff(name, originalDate, newDate);
+      onRefresh();
+    } catch (e: any) {
+      if (!handleApiError(e)) {
+        alert("수정 실패: " + e.message);
       }
     }
   };
