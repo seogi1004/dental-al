@@ -681,7 +681,7 @@ export default function DentalLeaveApp() {
                                             type="date" 
                                             value={formStartDate} 
                                             onChange={(e) => setFormStartDate(e.target.value)} 
-                                            className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:border-none print:bg-transparent print:px-1 print:py-1 print:mb-1 print:text-xs" 
+                                            className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:border-none print:bg-transparent print:px-1 print:py-1 print:mb-1 print:text-sm" 
                                         />
                                         <div className="flex gap-3 print:gap-1.5 print:hidden">
                                             {[
@@ -708,7 +708,7 @@ export default function DentalLeaveApp() {
                                             type="date" 
                                             value={formEndDate} 
                                             onChange={(e) => setFormEndDate(e.target.value)} 
-                                            className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:border-none print:bg-transparent print:px-1 print:py-1 print:mb-1 print:text-xs" 
+                                            className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:border-none print:bg-transparent print:px-1 print:py-1 print:mb-1 print:text-sm" 
                                         />
                                         <div className="flex gap-3 print:gap-1.5 print:hidden">
                                             {[
@@ -731,7 +731,7 @@ export default function DentalLeaveApp() {
                                     </div>
                                 </div>
                                 <div className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200 print:mt-2 flex items-center">
-                                    <span className={`whitespace-nowrap ${isOneDayOrLess ? 'print:hidden' : ''}`}>
+                                    <span className="whitespace-nowrap">
                                         총 <span className="text-lg text-gray-900 dark:text-white font-bold mx-1 print:text-base">{formTotalDays || '0'}</span> 일간
                                     </span>
                                     <span className={`hidden ${isOneDayOrLess ? 'print:inline ml-2 text-lg font-bold' : ''}`}>
