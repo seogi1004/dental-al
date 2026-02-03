@@ -734,7 +734,7 @@ export default function DentalLeaveApp() {
                                     <span className="whitespace-nowrap">
                                         총 <span className="text-lg text-gray-900 dark:text-white font-bold mx-1 print:text-base">{formTotalDays || '0'}</span> 일간
                                     </span>
-                                    <span className={`hidden ${isOneDayOrLess ? 'print:inline ml-2 text-lg font-bold' : ''}`}>
+                                    <span className={`hidden ${isOneDayOrLess ? 'print:inline ml-1 text-sm font-medium' : ''}`}>
                                         ({startType === 'FULL' ? '종일' : startType === 'AM' ? '오전' : '오후'})
                                     </span>
                                 </div>
