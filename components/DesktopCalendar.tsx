@@ -1,7 +1,7 @@
 'use client';
 
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
-import { Staff, Off } from '@/types';
+import { Staff } from '@/types';
 import { parseLeaveDate, isValidDate } from '@/lib/date';
 import { addOff, updateOff, deleteOff } from '@/services/off';
 
@@ -172,10 +172,10 @@ export default function DesktopCalendar({
     return list;
   };
 
-  const handleOffClick = async (name: string, originalDate: string, dateStr: string) => {
+  const handleOffClick = async (name: string, originalDate: string) => {
     if (!session?.isAdmin) return;
 
-    const action = prompt(`${name}님의 오프 (${originalDate}) 관리\n\n1. 수정\n2. 삭제`, "1");
+    const action = prompt(`${name}님의 오프 (${originalDate}) 관리\\n\\n1. 수정\\n2. 삭제`, "1");
     if (!action) return;
 
     if (action === "2") {
@@ -199,36 +199,29 @@ export default function DesktopCalendar({
     }
   };
 
-  const handleDateClick = async (dateStr: string) => {
+  const handleOffAdd = async (dateStr: string) => {
     if (!session?.isAdmin) return;
 
-    const type = prompt("추가할 일정을 선택하세요:\n\n1. 연차 (Leave)\n2. 오프 (Off)", "1");
-    if (!type) return;
+    const staffNames = staffData.map(s => s.name).join(', ');
+    const name = prompt(`오프를 추가할 직원 이름:\\n\\n${staffNames}`);
+    if (!name) return;
+    
+    const staff = staffData.find(s => s.name === name.trim());
+    if (!staff) {
+      alert("존재하지 않는 직원입니다.");
+      return;
+    }
 
-    if (type === "1" || type.toLowerCase() === "leave") {
-      handleLeaveAdd(dateStr);
-    } else if (type === "2" || type.toLowerCase() === "off") {
-      const staffNames = staffData.map(s => s.name).join(', ');
-      const name = prompt(`오프를 추가할 직원 이름:\n\n${staffNames}`);
-      if (!name) return;
-      
-      const staff = staffData.find(s => s.name === name.trim());
-      if (!staff) {
-        alert("존재하지 않는 직원입니다.");
-        return;
-      }
+    const d = new Date(dateStr);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const defaultDate = `${mm}/${dd}`;
 
-      const d = new Date(dateStr);
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      const defaultDate = `${mm}/${dd}`;
-
-      try {
-        await addOff(staff.name, defaultDate);
-        onRefresh();
-      } catch (e: any) {
-        alert("오프 추가 실패: " + e.message);
-      }
+    try {
+      await addOff(staff.name, defaultDate);
+      onRefresh();
+    } catch (e: any) {
+      alert("오프 추가 실패: " + e.message);
     }
   };
 
@@ -280,13 +273,22 @@ export default function DesktopCalendar({
                   )}
                 </span>
                 {session?.isAdmin && (
-                  <button 
-                    onClick={() => handleDateClick(dateStr)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[#EBE5DD] dark:hover:bg-[#3D3D3D] text-[#8D7B68] dark:text-[#A4907C] transition-opacity"
-                    title="일정 추가"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => handleOffAdd(dateStr)}
+                      className="px-1 py-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 dark:text-blue-400 text-[10px] font-bold leading-none border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all"
+                      title="오프 추가"
+                    >
+                      OFF
+                    </button>
+                    <button 
+                      onClick={() => handleLeaveAdd(dateStr)}
+                      className="p-0.5 rounded hover:bg-[#EBE5DD] dark:hover:bg-[#3D3D3D] text-[#8D7B68] dark:text-[#A4907C] border border-transparent hover:border-[#D7C8B8] dark:hover:border-[#444444] transition-all"
+                      title="연차 추가"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 )}
               </div>
               
@@ -331,7 +333,7 @@ export default function DesktopCalendar({
                        className="text-[10px] px-1.5 py-0.5 rounded flex justify-between items-center group/off cursor-pointer hover:opacity-80 transition bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
                        onClick={(e) => {
                          e.stopPropagation();
-                         handleOffClick(off.name, off.originalDate, dateStr);
+                         handleOffClick(off.name, off.originalDate);
                        }}
                        title={`${off.name} OFF ${off.memo ? `(${off.memo})` : ''}`}
                   >
