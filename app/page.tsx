@@ -19,6 +19,7 @@ import { useSheetData, useLeaveCalculations } from '@/hooks';
 import { addLeave, updateLeave, deleteLeave, addOff } from '@/services';
 import { MESSAGES } from '@/lib/messages';
 
+// Main Dashboard Component handling leave and off management
 export default function DentalLeaveApp() {
   const { data: session, status } = useSession();
   const { theme: currentTheme, setTheme } = useTheme();
