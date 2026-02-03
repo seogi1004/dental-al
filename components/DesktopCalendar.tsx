@@ -186,12 +186,20 @@ export default function DesktopCalendar({
 
     const newDate = prompt(`${name}님의 오프 (${originalDate}) 수정
 
-새로운 날짜를 입력하세요 (MM/DD):`, originalDate);
+오프 날짜를 수정하세요 (MM/DD 형식):
+예: 01/15`, originalDate);
     
     if (!newDate || newDate === originalDate) return;
+
+    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])$/;
+    if (!datePattern.test(newDate.trim())) {
+      alert(`올바른 날짜 형식으로 입력해주세요. (MM/DD)
+예: 01/15`);
+      return;
+    }
     
     try {
-      await updateOff(name, originalDate, newDate);
+      await updateOff(name, originalDate, newDate.trim());
       onRefresh();
     } catch (e: any) {
       if (!handleApiError(e)) {
