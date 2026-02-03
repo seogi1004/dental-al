@@ -143,33 +143,25 @@ export default function MobileScheduleList({
   const handleOffClick = async (name: string, date: string, memo?: string) => {
     if (!session?.isAdmin) return;
 
-    const newDateInput = prompt('날짜를 수정하시겠습니까? (YYYY-MM-DD 형식)\n삭제하려면 "삭제"를 입력하세요.', date);
-    
-    if (!newDateInput) return;
+    let displayDate = date;
+    try {
+      const [y, m, d] = date.split('-');
+      if (y && m && d) displayDate = `${m}/${d}`;
+    } catch(e) {}
 
-    if (newDateInput === '삭제') {
-      if (!confirm(`${name}의 ${date} 오프를 삭제하시겠습니까?`)) return;
+    const newDateInput = prompt(`날짜를 수정하시겠습니까? (MM/DD 형식)`, displayDate);
+    
+    if (!newDateInput || newDateInput === displayDate) return;
+
+    const newMemo = prompt('비고를 입력하세요 (선택사항):', memo || '');
       
-      try {
-        await deleteOff(name, date);
-        alert('오프가 삭제되었습니다.');
-        onRefresh();
-      } catch (error: any) {
-        if (!handleApiError(error)) {
-          alert(error.message || '오프 삭제에 실패했습니다.');
-        }
-      }
-    } else {
-      const newMemo = prompt('비고를 입력하세요 (선택사항):', memo || '');
-      
-      try {
-        await updateOff(name, date, newDateInput, newMemo || undefined);
-        alert('오프가 수정되었습니다.');
-        onRefresh();
-      } catch (error: any) {
-        if (!handleApiError(error)) {
-          alert(error.message || '오프 수정에 실패했습니다.');
-        }
+    try {
+      await updateOff(name, date, newDateInput, newMemo || undefined);
+      alert('오프가 수정되었습니다.');
+      onRefresh();
+    } catch (error: any) {
+      if (!handleApiError(error)) {
+        alert(error.message || '오프 수정에 실패했습니다.');
       }
     }
   };

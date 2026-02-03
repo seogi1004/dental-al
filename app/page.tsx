@@ -113,8 +113,7 @@ export default function DentalLeaveApp() {
       }
     } catch(e) {}
     
-    const newValue = prompt(`연차 날짜를 수정하세요:
-
+    const newValue = prompt(`연차 날짜를 수정하세요 (MM/DD 형식):
 예: 01/15, 01/15 AM, 01/15 PM`, displayDate);
     if (newValue === null) return;
     if (newValue.trim() === '' || newValue.trim() === originalDate) return;
