@@ -189,15 +189,15 @@ export default function DesktopCalendar({
 
     const newDate = prompt(`${name}님의 오프 (${originalDate}) 수정
 
-오프 날짜를 수정하세요 (MM/DD 형식):
-예: 01/15`, originalDate);
+오프 날짜를 수정하세요 (M/D 형식):
+예: 1/15`, originalDate);
     
     if (!newDate || newDate === originalDate) return;
 
     const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])$/;
     if (!datePattern.test(newDate.trim())) {
-      alert(`올바른 날짜 형식으로 입력해주세요. (MM/DD)
-예: 01/15`);
+      alert(`올바른 날짜 형식으로 입력해주세요. (M/D)
+예: 1/15`);
       return;
     }
     
@@ -227,8 +227,8 @@ export default function DesktopCalendar({
     }
 
     const d = new Date(dateStr);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1);
+    const dd = String(d.getDate());
     const defaultDate = `${mm}/${dd}`;
 
     try {

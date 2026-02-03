@@ -104,8 +104,8 @@ export default function DentalLeaveApp() {
       if (dateYMD) {
         const d = new Date(dateYMD);
         if (!isNaN(d.getTime())) {
-          const mm = String(d.getMonth() + 1).padStart(2, '0');
-          const dd = String(d.getDate()).padStart(2, '0');
+          const mm = String(d.getMonth() + 1);
+          const dd = String(d.getDate());
           displayDate = `${mm}/${dd}`;
           if (String(originalDate).toUpperCase().includes('AM')) displayDate += ' AM';
           else if (String(originalDate).toUpperCase().includes('PM')) displayDate += ' PM';
@@ -113,8 +113,8 @@ export default function DentalLeaveApp() {
       }
     } catch(e) {}
     
-    const newValue = prompt(`연차 날짜를 수정하세요 (MM/DD 형식):
-예: 01/15, 01/15 AM, 01/15 PM`, displayDate);
+    const newValue = prompt(`연차 날짜를 수정하세요 (M/D 형식):
+예: 1/15, 1/15 AM, 1/15 PM`, displayDate);
     if (newValue === null) return;
     if (newValue.trim() === '' || newValue.trim() === originalDate) return;
     
@@ -122,7 +122,7 @@ export default function DentalLeaveApp() {
     if (!datePattern.test(newValue.trim())) {
       alert(`올바른 형식으로 입력해주세요.
 
-예: 01/15, 01/15 AM, 01/15 PM`);
+예: 1/15, 1/15 AM, 1/15 PM`);
       return;
     }
     
@@ -175,8 +175,8 @@ export default function DentalLeaveApp() {
     }
     
     const d = new Date(dateStr);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1);
+    const dd = String(d.getDate());
     const baseDate = `${mm}/${dd}`;
     
     const typeInput = prompt(`연차 타입을 입력하세요:
