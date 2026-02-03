@@ -175,7 +175,10 @@ export default function DesktopCalendar({
   const handleOffClick = async (name: string, originalDate: string) => {
     if (!session?.isAdmin) return;
 
-    const action = prompt(`${name}님의 오프 (${originalDate}) 관리\n\n1. 수정\n2. 삭제`, "1");
+    const action = prompt(`${name}님의 오프 (${originalDate}) 관리
+
+1. 수정
+2. 삭제`, "1");
     if (!action) return;
 
     if (action === "2") {
@@ -203,7 +206,9 @@ export default function DesktopCalendar({
     if (!session?.isAdmin) return;
 
     const staffNames = staffData.map(s => s.name).join(', ');
-    const name = prompt(`오프를 추가할 직원 이름:\\n\\n${staffNames}`);
+    const name = prompt(`오프를 추가할 직원 이름:
+
+${staffNames}`);
     if (!name) return;
     
     const staff = staffData.find(s => s.name === name.trim());
@@ -266,12 +271,20 @@ export default function DesktopCalendar({
           return (
             <div key={day} className={`h-24 border-r border-b border-[#F0EAE4] dark:border-[#333333] p-1 relative hover:bg-[#FDFBF7] dark:hover:bg-[#252525] transition group ${isToday ? 'bg-[#FFF9F0] dark:bg-[#2C241B]' : ''}`}>
               <div className="flex items-center justify-between px-1">
-                <span className={`text-sm font-bold ${dayOfWeek === 0 ? 'text-red-400' : dayOfWeek === 6 ? 'text-blue-400' : 'text-[#5C5552] dark:text-[#A0A0A0]'}`}>
-                  {day} {isToday && <span className="text-[10px] bg-[#8D7B68] dark:bg-[#5C4A3A] text-white px-1.5 rounded-full ml-1 align-top">Today</span>}
-                  {dayOfWeek === 0 && offs.length > 0 && (
-                    <span className="ml-1 text-[10px] text-red-500 font-bold" title="일요일 오프 주의">!</span>
-                  )}
+                <span className={`text-sm font-bold flex items-center justify-center w-6 h-6 rounded-full ${
+                  isToday 
+                    ? 'bg-[#8D7B68] dark:bg-[#5C4A3A] text-white' 
+                    : dayOfWeek === 0 
+                      ? 'text-red-400' 
+                      : dayOfWeek === 6 
+                        ? 'text-blue-400' 
+                        : 'text-[#5C5552] dark:text-[#A0A0A0]'
+                }`}>
+                  {day}
                 </span>
+                {dayOfWeek === 0 && offs.length > 0 && (
+                  <span className="ml-1 text-[10px] text-red-500 font-bold" title="일요일 오프 주의">!</span>
+                )}
                 {session?.isAdmin && (
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 

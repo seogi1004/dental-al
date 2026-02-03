@@ -68,13 +68,17 @@ export default function DentalLeaveApp() {
       }
     } catch(e) {}
     
-    const newValue = prompt("연차 날짜를 수정하세요:\n\n예: 01/15, 01/15 AM, 01/15 PM", displayDate);
+    const newValue = prompt(`연차 날짜를 수정하세요:
+
+예: 01/15, 01/15 AM, 01/15 PM`, displayDate);
     if (newValue === null) return;
     if (newValue.trim() === '' || newValue.trim() === originalDate) return;
     
     const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM))?$/i;
     if (!datePattern.test(newValue.trim())) {
-      alert("올바른 형식으로 입력해주세요.\n\n예: 01/15, 01/15 AM, 01/15 PM");
+      alert(`올바른 형식으로 입력해주세요.
+
+예: 01/15, 01/15 AM, 01/15 PM`);
       return;
     }
     
@@ -117,7 +121,9 @@ export default function DentalLeaveApp() {
     if (!isAdmin) return;
     
     const staffNames = staffData.map(s => s.name).join(', ');
-    const selectedName = prompt(`연차를 추가할 직원 이름을 입력하세요:\n\n현재 직원: ${staffNames}`);
+    const selectedName = prompt(`연차를 추가할 직원 이름을 입력하세요:
+
+현재 직원: ${staffNames}`);
     if (!selectedName) return;
     
     const staff = staffData.find(s => s.name === selectedName.trim());
@@ -131,7 +137,11 @@ export default function DentalLeaveApp() {
     const dd = String(d.getDate()).padStart(2, '0');
     const baseDate = `${mm}/${dd}`;
     
-    const typeInput = prompt("연차 타입을 입력하세요:\n\n• 공백 또는 Enter = 종일 연차\n• AM = 오전 반차\n• PM = 오후 반차", "");
+    const typeInput = prompt(`연차 타입을 입력하세요:
+
+• 공백 또는 Enter = 종일 연차
+• AM = 오전 반차
+• PM = 오후 반차`, "");
     if (typeInput === null) return;
     
     let typeUpper = typeInput.trim().toUpperCase();
@@ -140,7 +150,11 @@ export default function DentalLeaveApp() {
     if (typeUpper === 'P') typeUpper = 'PM';
     
     if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
-      alert("올바른 타입을 입력해주세요.\n\n• 공백 = 종일\n• AM = 오전 반차\n• PM = 오후 반차");
+      alert(`올바른 타입을 입력해주세요.
+
+• 공백 = 종일
+• AM = 오전 반차
+• PM = 오후 반차`);
       return;
     }
     
@@ -150,7 +164,11 @@ export default function DentalLeaveApp() {
     });
     
     if (existingLeave) {
-      alert(`${staff.name}님은 이 날짜에 이미 연차가 등록되어 있습니다.\n\n기존: ${existingLeave.original}\n\n수정이 필요하면 기존 항목을 클릭해주세요.`);
+      alert(`${staff.name}님은 이 날짜에 이미 연차가 등록되어 있습니다.
+
+기존: ${existingLeave.original}
+
+수정이 필요하면 기존 항목을 클릭해주세요.`);
       return;
     }
     
