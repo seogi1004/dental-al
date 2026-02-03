@@ -13,7 +13,8 @@ import { useTheme } from "next-themes";
 import { Staff } from '@/types';
 import { theme } from '@/lib/theme';
 import { getTodayString, formatDate, parseLeaveDate } from '@/lib/date';
-import { UserMenu, TodayStatusCard, MobileScheduleList, DesktopCalendar, HelpPanel, WarningBanner } from '@/components';
+import { UserMenu, TodayStatusCard, MobileScheduleList, DesktopCalendar, HelpPanel } from '@/components';
+import { WarningBanner } from '@/components/DesktopCalendar';
 import { useSheetData, useLeaveCalculations } from '@/hooks';
 import { addLeave, updateLeave, deleteLeave } from '@/services';
 
@@ -535,7 +536,7 @@ export default function DentalLeaveApp() {
                              <div className="col-span-2">
                                   {invalidLeaves.length > 0 || sundayLeaves.length > 0 ? (
                                      <WarningBanner 
-                                       session={session} 
+                                       session={session as any} 
                                        invalidLeaves={invalidLeaves} 
                                        sundayLeaves={sundayLeaves}
                                        className="h-full mb-0 overflow-y-auto"
