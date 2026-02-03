@@ -41,6 +41,7 @@ interface MobileScheduleListProps {
   sundayLeaves: Array<{ name: string; original: string }>;
   onLeaveAdd?: () => void;
   onOffAdd?: () => void;
+  isAdmin?: boolean;
 }
 
 export default function MobileScheduleList({
@@ -56,7 +57,8 @@ export default function MobileScheduleList({
   invalidLeaves,
   sundayLeaves,
   onLeaveAdd,
-  onOffAdd
+  onOffAdd,
+  isAdmin = false
 }: MobileScheduleListProps) {
   type CombinedItem = {
     name: string;
@@ -94,7 +96,7 @@ export default function MobileScheduleList({
   });
 
   const handleOffClick = async (name: string, date: string, memo?: string) => {
-    if (!session?.isAdmin) return;
+    if (!isAdmin) return;
 
     let displayDate = date;
     try {
@@ -124,7 +126,7 @@ export default function MobileScheduleList({
   };
 
   const handleOffDelete = async (name: string, date: string) => {
-    if (!session?.isAdmin) return;
+    if (!isAdmin) return;
     if (!confirm(MESSAGES.off.delete.confirm(name, date))) return;
 
     try {
@@ -144,7 +146,7 @@ export default function MobileScheduleList({
         <div className="flex items-center gap-2">
           <CalendarDays className="w-5 h-5 text-[#8D7B68] dark:text-[#A4907C]"/> {todayMonth}월 일정
         </div>
-        {session?.isAdmin && (
+        {isAdmin && (
           <div className="flex items-center gap-2">
             <button 
               onClick={onOffAdd}
@@ -216,13 +218,13 @@ export default function MobileScheduleList({
                 <div key={`${item.listType}-${idx}`} 
                   className={`flex items-center justify-between p-3 rounded-xl transition-colors duration-300 ${containerClass}`}
                 >
-                  <div 
+                    <div 
                     onClick={() => isOff 
                       ? handleOffClick(item.name, item.date, item.memo) 
                       : onLeaveClick(item.name, item.original, item.date)
                     }
                     className={`flex items-center gap-3 flex-1 transition-opacity ${
-                      (isOff ? session?.isAdmin : true) ? 'cursor-pointer hover:opacity-70' : 'cursor-default'
+                      (isOff ? isAdmin : true) ? 'cursor-pointer hover:opacity-70' : 'cursor-default'
                     }`}
                     title={isOff ? item.memo : (item.warning || undefined)}
                   >
@@ -245,7 +247,7 @@ export default function MobileScheduleList({
                         : 'bg-[#8D7B68] dark:bg-[#5C4A3A] text-white'
                     }`}>Today</span>
                   )}
-                  {session?.isAdmin && (
+                  {isAdmin && (
                     <button 
                       onClick={(e) => { 
                         e.stopPropagation(); 

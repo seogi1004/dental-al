@@ -555,7 +555,7 @@ export default function DentalLeaveApp() {
 
                 <button 
                   onClick={toggleSidebar}
-                  className={`ml-2 p-2.5 rounded-full transition shadow-sm ${!isSidebarOpen ? 'bg-[#7A6A59] dark:bg-[#4A3B2F] text-white' : 'bg-[#FDFBF7] dark:bg-[#2C2C2C] text-[#8D7B68] dark:text-[#A4907C]'}`}
+                  className={`hidden md:flex ml-2 p-2.5 rounded-full transition shadow-sm ${!isSidebarOpen ? 'bg-[#7A6A59] dark:bg-[#4A3B2F] text-white' : 'bg-[#FDFBF7] dark:bg-[#2C2C2C] text-[#8D7B68] dark:text-[#A4907C]'}`}
                   title={isSidebarOpen ? "가이드 숨기기" : "가이드 보기"}
                 >
                   {isSidebarOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
@@ -597,6 +597,7 @@ export default function DentalLeaveApp() {
                              todayMonth={new Date().getMonth() + 1}
                              invalidLeaves={invalidLeaves}
                              sundayLeaves={sundayLeaves}
+                             isAdmin={!!isAdmin}
                            />
 
                       </div>
