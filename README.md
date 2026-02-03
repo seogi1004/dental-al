@@ -45,14 +45,18 @@
 ```
 .
 ├── app/
-│   ├── page.js          # 메인 대시보드 (CSR)
-│   ├── layout.js        # Root Layout & Theme Provider
+│   ├── page.tsx          # 메인 대시보드 (CSR)
+│   ├── layout.tsx        # Root Layout & Theme Provider
 │   └── globals.css      # Tailwind Global Styles
 ├── pages/
 │   └── api/             # API Routes (Serverless Functions)
 │       ├── auth/        # NextAuth 설정
-│       ├── sheets.js    # 구글 시트 데이터 동기화 (GET/POST)
-│       └── calendar.js  # 캘린더 일정 CRUD (POST/PUT/DELETE)
+│       ├── sheets.ts    # 구글 시트 데이터 동기화 (GET/POST)
+│       └── off.ts       # 오프(Off) 관리 API (GET/POST/DELETE)
+├── components/          # UI Components
+│   ├── HelpPanel.tsx    # 도움말 패널
+│   ├── UserMenu.tsx     # 사용자 메뉴
+│   └── ...
 ├── public/              # Static Assets
 └── README.md            # Project Documentation
 ```
