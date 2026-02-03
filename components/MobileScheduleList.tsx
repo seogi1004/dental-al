@@ -37,7 +37,7 @@ interface MobileScheduleListProps {
   formatDate: (dateStr: string) => string;
   todayMonth: number;
   invalidLeaves: Array<{ name: string; original: string }>;
-  sundayLeaves: Array<{ name: string; original: string }>;
+  sundayLeaves: Array<{ name: string; original: string; date?: string }>;
 }
 
 export default function MobileScheduleList({

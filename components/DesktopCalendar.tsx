@@ -19,7 +19,7 @@ export interface WarningBannerProps {
     isAdmin: boolean;
   } | null;
   invalidLeaves: Array<{ name: string; original: string }>;
-  sundayLeaves: Array<{ name: string; original: string; date?: string }>; // date 추가
+  sundayLeaves: Array<{ name: string; original: string; date?: string }>;
   className?: string;
 }
 
@@ -76,7 +76,7 @@ interface DesktopCalendarProps {
     isAdmin: boolean;
   } | null;
   invalidLeaves: Array<{ name: string; original: string }>;
-  sundayLeaves: Array<{ name: string; original: string }>;
+  sundayLeaves: Array<{ name: string; original: string; date?: string }>;
   handlers: {
     handleLeaveClick: (name: string, original: string, date: string) => void;
     handleLeaveDelete: (name: string, original: string) => void;
