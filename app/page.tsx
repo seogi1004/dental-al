@@ -775,7 +775,7 @@ export default function DentalLeaveApp() {
       
       <div className="mt-6 text-center text-xs text-[#8D7B68] dark:text-[#A4907C] opacity-60 print:hidden pb-6">
           <p className="md:hidden">© {new Date().getFullYear()} Alvin</p>
-          <div className="hidden md:flex justify-center items-center gap-3">
+          <div className="hidden md:flex justify-center items-center gap-1.5">
             <p>© {new Date().getFullYear()} Alvin. All rights reserved.</p>
             <a 
               href="https://github.com/seogi1004/dental-al" 
