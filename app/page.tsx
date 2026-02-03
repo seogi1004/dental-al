@@ -52,10 +52,7 @@ export default function DentalLeaveApp() {
   const isAdmin = (session as any)?.isAdmin;
 
   const handleLeaveClickWrapper = async (staffName: string, originalDate: string, dateYMD: string) => {
-    if (!isAdmin) {
-      alert("관리자만 수정할 수 있습니다.");
-      return;
-    }
+    if (!isAdmin) return;
     
     let displayDate = originalDate;
     try {
@@ -96,10 +93,7 @@ export default function DentalLeaveApp() {
   };
 
   const handleLeaveDeleteWrapper = async (staffName: string, originalDate: string) => {
-    if (!isAdmin) {
-      alert("관리자만 삭제할 수 있습니다.");
-      return;
-    }
+    if (!isAdmin) return;
     
     if (!confirm(`${staffName}님의 연차(${originalDate})를 삭제하시겠습니까?`)) {
       return;
@@ -120,10 +114,7 @@ export default function DentalLeaveApp() {
   };
 
   const handleLeaveAddWrapper = async (dateStr: string) => {
-    if (!isAdmin) {
-      alert("관리자만 추가할 수 있습니다.");
-      return;
-    }
+    if (!isAdmin) return;
     
     const staffNames = staffData.map(s => s.name).join(', ');
     const selectedName = prompt(`연차를 추가할 직원 이름을 입력하세요:\n\n현재 직원: ${staffNames}`);
@@ -180,10 +171,7 @@ export default function DentalLeaveApp() {
   };
 
   const addStaff = () => {
-    if (!isAdmin) {
-      alert("관리자 권한이 필요한 기능입니다.");
-      return;
-    }
+    if (!isAdmin) return;
     const newItem: Staff = {
       name: "", 
       role: "사원", 
