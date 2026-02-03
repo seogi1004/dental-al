@@ -44,22 +44,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
       const newData: StaffData = req.body;
-      // 요약 시트에 들어갈 데이터만 추출 (이름, 직급, 입사일, 발생, 사용, 비고)
-      const rows = newData.map(item => [
-        item.name, item.role, item.date, item.total, item.used, item.memo
+      
+      // [변경] 요약 시트에 들어갈 데이터를 두 부분으로 분리하여 업데이트
+      // 목적: D열(Total)에 있는 사용자의 엑셀 수식을 보존하기 위함
+      // Part 1: A, B, C열 (이름, 직급, 입사일)
+      const rowsPart1 = newData.map(item => [
+        item.name, item.role, item.date
+      ]);
+      
+      // Part 2: E, F열 (사용일수, 비고) - D열(Total) 건너뜀
+      const rowsPart2 = newData.map(item => [
+        item.used, item.memo
       ]);
 
-      await sheets.spreadsheets.values.clear({
+      // 1. 기존 데이터 지우기 (D열 제외)
+      // A2:C15 (이름~입사일) 및 E2:F15 (사용~비고) 초기화
+      // batchClear 사용
+      await sheets.spreadsheets.values.batchClear({
         spreadsheetId,
-        range: `${SHEET_SUMMARY}!A2:F15`
+        requestBody: {
+          ranges: [`${SHEET_SUMMARY}!A2:C15`, `${SHEET_SUMMARY}!E2:F15`]
+        }
       });
 
-      // 2. 새 데이터 쓰기
-      await sheets.spreadsheets.values.update({
+      // 2. 새 데이터 쓰기 (D열 건너뛰고 A~C, E~F 업데이트)
+      await sheets.spreadsheets.values.batchUpdate({
         spreadsheetId,
-        range: `${SHEET_SUMMARY}!A2`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: rows },
+        requestBody: {
+          valueInputOption: 'USER_ENTERED',
+          data: [
+            {
+              range: `${SHEET_SUMMARY}!A2`,
+              values: rowsPart1
+            },
+            {
+              range: `${SHEET_SUMMARY}!E2`,
+              values: rowsPart2
+            }
+          ]
+        }
       });
 
       return res.status(200).json({ success: true });
