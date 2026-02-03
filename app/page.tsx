@@ -666,28 +666,28 @@ export default function DentalLeaveApp() {
             <tr>
                 <th className="border border-gray-800 dark:border-gray-500 bg-gray-50 dark:bg-[#2D2D2D] p-3 font-bold text-gray-800 dark:text-[#E0E0E0]">기 간</th>
                 <td colSpan={3} className="border border-gray-800 dark:border-gray-500 p-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4 print:gap-2">
                         <div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium">시작일</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium print:text-[10px]">시작일</div>
                             <input 
                                 type="date" 
                                 value={formStartDate} 
                                 onChange={(e) => setFormStartDate(e.target.value)} 
-                                className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2" 
+                                className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:px-1 print:py-1 print:mb-1 print:text-xs" 
                             />
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 print:gap-1.5">
                                 {[
                                     { value: 'FULL', label: '종일' },
                                     { value: 'AM', label: '오전' },
                                     { value: 'PM', label: '오후' }
                                 ].map(option => (
-                                    <label key={option.value} className="flex items-center gap-1.5 cursor-pointer text-sm">
+                                    <label key={option.value} className="flex items-center gap-1.5 cursor-pointer text-sm print:gap-1 print:text-xs">
                                         <input 
                                             type="radio" 
                                             name="startType"
                                             checked={startType === option.value}
                                             onChange={() => setStartType(option.value)}
-                                            className="w-4 h-4 accent-gray-700 dark:accent-gray-400" 
+                                            className="w-4 h-4 accent-gray-700 dark:accent-gray-400 print:w-3 print:h-3" 
                                         />
                                         <span className="text-gray-700 dark:text-gray-300">{option.label}</span>
                                     </label>
@@ -695,26 +695,26 @@ export default function DentalLeaveApp() {
                             </div>
                         </div>
                         <div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium">종료일</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium print:text-[10px]">종료일</div>
                             <input 
                                 type="date" 
                                 value={formEndDate} 
                                 onChange={(e) => setFormEndDate(e.target.value)} 
-                                className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2" 
+                                className="w-full border dark:border-gray-500 px-2 py-1.5 rounded border-gray-300 bg-transparent mb-2 print:px-1 print:py-1 print:mb-1 print:text-xs" 
                             />
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 print:gap-1.5">
                                 {[
                                     { value: 'FULL', label: '종일' },
                                     { value: 'AM', label: '오전' },
                                     { value: 'PM', label: '오후' }
                                 ].map(option => (
-                                    <label key={option.value} className="flex items-center gap-1.5 cursor-pointer text-sm">
+                                    <label key={option.value} className="flex items-center gap-1.5 cursor-pointer text-sm print:gap-1 print:text-xs">
                                         <input 
                                             type="radio" 
                                             name="endType"
                                             checked={endType === option.value}
                                             onChange={() => setEndType(option.value)}
-                                            className="w-4 h-4 accent-gray-700 dark:accent-gray-400" 
+                                            className="w-4 h-4 accent-gray-700 dark:accent-gray-400 print:w-3 print:h-3" 
                                         />
                                         <span className="text-gray-700 dark:text-gray-300">{option.label}</span>
                                     </label>
@@ -722,8 +722,8 @@ export default function DentalLeaveApp() {
                             </div>
                         </div>
                     </div>
-                    <div className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200">
-                        총 <span className="text-lg text-gray-900 dark:text-white font-bold mx-1">{formTotalDays || '0'}</span> 일간
+                    <div className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200 print:mt-2">
+                        총 <span className="text-lg text-gray-900 dark:text-white font-bold mx-1 print:text-base">{formTotalDays || '0'}</span> 일간
                     </div>
                 </td>
             </tr>
