@@ -1,16 +1,67 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Pretendard 폰트 설정 */
+:root {
+  --font-pretendard: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+}
+
 /* 기본 배경색 설정 (깜빡임 방지) */
 body {
   background-color: #FDFBF7;
+  font-family: var(--font-pretendard);
 }
 
-/* 인쇄 시 배경 그래픽 출력 강제 */
+.font-pretendard {
+  font-family: var(--font-pretendard);
+}
+
+/* 인쇄 시 A4 1페이지 최적화 */
 @media print {
-  body {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  
+  body, html {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    background-color: white !important;
+    background: white !important;
+    background-image: none !important;
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important; /* 2페이지 넘어감 방지 */
+  }
+
+  /* 모든 요소 배경/효과 제거 */
+  * {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* 인쇄 영역 컨테이너만 흰색 배경 유지 */
+  .print-form-container {
+    background-color: white !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    display: none !important;
+    -webkit-appearance: none !important;
   }
 }

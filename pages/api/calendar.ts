@@ -1,11 +1,13 @@
 import { google } from 'googleapis';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { CalendarPostRequest, CalendarDeleteRequest, CalendarPutRequest } from '@/types';
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const SHEET_CALENDAR = '2026년';
 
-  let session;
+  let session: any;
   try {
     session = await getServerSession(req, res, authOptions);
   } catch (e) {
@@ -24,13 +26,12 @@ export default async function handler(req, res) {
   const sheets = google.sheets({ version: 'v4', auth });
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-  // ============================================================
-  // [POST] 연차 추가
-  // Body: { name, date } (date는 "01/15" 또는 "01/15 AM" 형식)
-  // ============================================================
   if (req.method === 'POST') {
+    if (!session?.isAdmin) {
+      return res.status(403).json({ error: 'Permission denied. Admin only.' });
+    }
     try {
-      const { name, date } = req.body;
+      const { name, date }: CalendarPostRequest = req.body;
       if (!name || !date) return res.status(400).json({ error: 'Missing name or date' });
 
       const response = await sheets.spreadsheets.values.get({
@@ -66,45 +67,41 @@ export default async function handler(req, res) {
         spreadsheetId,
         range,
         valueInputOption: 'USER_ENTERED',
-        resource: { values: [[date]] }
+        requestBody: { values: [[date]] }
       });
 
       return res.status(200).json({ success: true, message: `Added to ${range}` });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Add Error:", error);
       return res.status(500).json({ error: error.message });
     }
   }
 
-  // ============================================================
-  // [DELETE] 연차 삭제
-  // Body: { name, date } (date는 "1-15" 또는 "1-15 AM" 원본 텍스트)
-  // ============================================================
   if (req.method === 'DELETE') {
+    if (!session?.isAdmin) {
+      return res.status(403).json({ error: 'Permission denied. Admin only.' });
+    }
     try {
-        const { name, date } = req.body;
+        const { name, date }: CalendarDeleteRequest = req.body;
         if (!name || !date) return res.status(400).json({ error: 'Missing name or date' });
 
-        // 1. 전체 데이터 읽기 (좌표 찾기 위함)
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: `${SHEET_CALENDAR}!A:Z`, // A열(이름) ~ Z열(충분히 넓게)
+            range: `${SHEET_CALENDAR}!A:Z`,
         });
         
         const rows = response.data.values || [];
         
-        // 2. 행(Row) 찾기
         let rowIndex = -1;
         for (let i = 0; i < rows.length; i++) {
-            if (rows[i][0] === name) { // A열 매칭
-                rowIndex = i; // 0-based index
+            if (rows[i][0] === name) {
+                rowIndex = i;
                 break;
             }
         }
 
         if (rowIndex === -1) return res.status(404).json({ error: 'User not found' });
 
-        // 3. 열(Col) 찾기 (E열 = 인덱스 4 부터)
         let colIndex = -1;
         const targetRow = rows[rowIndex];
         for (let j = 4; j < targetRow.length; j++) {
@@ -116,14 +113,11 @@ export default async function handler(req, res) {
 
         if (colIndex === -1) return res.status(404).json({ error: 'Date not found' });
 
-        // 4. A1 표기법 변환 (Row는 1-based, Col은 알파벳)
         const rowNum = rowIndex + 1;
-        const colLetter = String.fromCharCode(65 + colIndex); // 0=A, 1=B, ... (Z 넘어가는 경우 처리 필요하나 E~X 범위라 안심)
-        // 만약 Z 넘어가면 로직 추가 필요하지만, 현재는 20개(X열) 까지라 OK.
+        const colLetter = String.fromCharCode(65 + colIndex);
 
         const range = `${SHEET_CALENDAR}!${colLetter}${rowNum}`;
 
-        // 5. 해당 셀 지우기
         await sheets.spreadsheets.values.clear({
             spreadsheetId,
             range
@@ -131,22 +125,20 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ success: true, message: `Deleted ${range}` });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Delete Error:", error);
         return res.status(500).json({ error: error.message });
     }
   }
 
-  // ============================================================
-  // [PUT] 연차 수정
-  // Body: { name, oldDate, newDate }
-  // ============================================================
   if (req.method === 'PUT') {
+    if (!session?.isAdmin) {
+      return res.status(403).json({ error: 'Permission denied. Admin only.' });
+    }
     try {
-        const { name, oldDate, newDate } = req.body;
+        const { name, oldDate, newDate }: CalendarPutRequest = req.body;
         if (!name || !oldDate || !newDate) return res.status(400).json({ error: 'Missing params' });
 
-        // 1. 전체 데이터 읽기
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
             range: `${SHEET_CALENDAR}!A:Z`,
@@ -154,7 +146,6 @@ export default async function handler(req, res) {
         
         const rows = response.data.values || [];
         
-        // 2. 행(Row) 찾기
         let rowIndex = -1;
         for (let i = 0; i < rows.length; i++) {
             if (rows[i][0] === name) {
@@ -165,7 +156,6 @@ export default async function handler(req, res) {
 
         if (rowIndex === -1) return res.status(404).json({ error: 'User not found' });
 
-        // 3. 열(Col) 찾기
         let colIndex = -1;
         const targetRow = rows[rowIndex];
         for (let j = 4; j < targetRow.length; j++) {
@@ -177,7 +167,6 @@ export default async function handler(req, res) {
 
         if (colIndex === -1) return res.status(404).json({ error: 'Original date not found' });
 
-        // 4. 해당 셀 업데이트
         const rowNum = rowIndex + 1;
         const colLetter = String.fromCharCode(65 + colIndex);
         const range = `${SHEET_CALENDAR}!${colLetter}${rowNum}`;
@@ -186,12 +175,12 @@ export default async function handler(req, res) {
             spreadsheetId,
             range,
             valueInputOption: 'USER_ENTERED',
-            resource: { values: [[newDate]] }
+            requestBody: { values: [[newDate]] }
         });
 
         return res.status(200).json({ success: true, message: `Updated ${range}` });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Update Error:", error);
         return res.status(500).json({ error: error.message });
     }
