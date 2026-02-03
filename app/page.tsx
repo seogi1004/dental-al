@@ -372,7 +372,7 @@ export default function DentalLeaveApp() {
                      className="bg-transparent font-bold text-lg text-[#5C5552] dark:text-[#E0E0E0] w-24 p-0 border-b border-transparent focus:border-[#A4907C]"
                    />
                 ) : <span className="font-bold text-lg text-[#5C5552] dark:text-[#E0E0E0]">{staff.name}</span>}
-                <span className="text-xs bg-white dark:bg-[#1E1E1E] border border-[#EBE5DD] dark:border-[#444444] px-1.5 py-0.5 rounded text-[#8D7B68] dark:text-[#A4907C]">
+                <span className="text-xs bg-white dark:bg-[#1E1E1E] border border-[#EBE5DD] dark:border-[#444444] px-1.5 py-0.5 rounded text-[#8D7B68] dark:text-[#A4907C] w-10 inline-flex justify-center items-center">
                   {isAdmin ? (
                      <input 
                        type="text" 
