@@ -557,6 +557,21 @@ export default function DentalLeaveApp() {
   // 1. 오늘의 현황 카드 (공통)
   const TodayStatusCard = () => {
     const todayLeaves = getTodayLeaves();
+    
+    // 상태 메시지 결정
+    let displayStatus = "자동 동기화";
+    let StatusIcon = CheckCircle;
+    let spin = false;
+
+    if (loading || statusMsg === '저장 중...' || statusMsg === '수정 중...' || statusMsg === '삭제 중...' || statusMsg === '추가 중...') {
+        displayStatus = statusMsg || "동기화 중...";
+        StatusIcon = RefreshCw;
+        spin = true;
+    } else if (statusMsg) {
+        displayStatus = statusMsg;
+        StatusIcon = CheckCircle;
+    }
+
     return (
       <div className="bg-[#8D7B68] dark:bg-[#5C4A3A] text-white p-5 rounded-2xl shadow-lg flex items-center justify-between mb-4 h-full transition-colors duration-300">
         <div>
@@ -577,8 +592,11 @@ export default function DentalLeaveApp() {
              </div>
           )}
         </div>
-        <div className="bg-white/20 p-3 rounded-full">
-           <CheckCircle className="w-6 h-6 text-white" />
+        <div className="flex flex-col items-end gap-1">
+            <div className={`bg-white/20 p-3 rounded-full transition-all duration-300 ${spin ? 'animate-spin' : ''}`}>
+               <StatusIcon className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-[10px] opacity-80 font-medium">{displayStatus}</span>
         </div>
       </div>
     );
@@ -769,7 +787,7 @@ export default function DentalLeaveApp() {
                     </ul>
                   </div>
                 )}
-                <p className="text-xs opacity-80">💡 구글 시트에서 해당 데이터를 수정해주세요. {invalidLeaves.length > 0 && '(형식: 01/15, 01/15 AM, 01/15 PM)'}</p>
+                <p className="text-xs opacity-80">💡 항목을 클릭하여 수정하거나 삭제할 수 있습니다.</p>
               </div>
             </div>
           </div>
@@ -1023,7 +1041,7 @@ export default function DentalLeaveApp() {
                                  {invalidLeaves.length > 0 || sundayLeaves.length > 0 ? (
                                     <div className="h-full bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-700 p-5 flex items-center justify-center transition-colors">
                                         <p className="text-amber-800 dark:text-amber-300 font-medium text-center">
-                                            ⚠️ 스프레드시트 확인이 필요합니다
+                                            ⚠️ 연차 일정 확인이 필요합니다
                                         </p>
                                     </div>
                                  ) : (
@@ -1046,13 +1064,6 @@ export default function DentalLeaveApp() {
                                    <span className="hidden md:inline">직원 연차 리스트</span>
                                    <span className="md:hidden">직원 리스트</span>
                                 </h2>
-                                <p className="text-[#A4907C] dark:text-[#C4B09C] text-xs md:text-sm mt-2 flex items-center gap-2">
-                                    {statusMsg ? (
-                                        <span className="flex items-center gap-1 text-green-600 font-medium"><CheckCircle className="w-4 h-4"/> {statusMsg}</span>
-                                    ) : (
-                                        <span className="flex items-center gap-1"><RefreshCw className="w-4 h-4"/> 자동 동기화</span>
-                                    )}
-                                </p>
                             </div>
                             {session?.isAdmin && (
                               <button onClick={addStaff} className={`${theme.primary} text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md transition`}>
