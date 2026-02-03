@@ -132,8 +132,7 @@ export default function DentalLeaveApp() {
     } catch (e: any) {
       console.error(e);
       if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
-        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-        signOut();
+        signOut({ callbackUrl: '/' });
         return;
       }
       alert("수정 실패: " + e.message);
@@ -153,8 +152,7 @@ export default function DentalLeaveApp() {
     } catch (e: any) {
       console.error(e);
       if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
-        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-        signOut();
+        signOut({ callbackUrl: '/' });
         return;
       }
       alert("삭제 실패: " + e.message);
@@ -224,8 +222,7 @@ export default function DentalLeaveApp() {
     } catch (e: any) {
       console.error(e);
       if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
-        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-        signOut();
+        signOut({ callbackUrl: '/' });
         return;
       }
       alert("추가 실패: " + e.message);
@@ -234,6 +231,10 @@ export default function DentalLeaveApp() {
 
   const addStaff = () => {
     if (!isAdmin) return;
+    if (staffData.length >= 14) {
+      alert("최대 직원 수(14명)를 초과하여 추가할 수 없습니다.");
+      return;
+    }
     const newItem: Staff = {
       name: "", 
       role: "사원", 

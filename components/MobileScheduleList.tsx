@@ -5,6 +5,15 @@ import { LeaveItem } from '@/types';
 import { OffItem } from '@/types/off';
 import { formatDate } from '@/lib/date';
 import { updateOff, deleteOff } from '@/services/off';
+import { signOut } from "next-auth/react";
+
+const handleApiError = (e: any) => {
+  if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
+    signOut({ callbackUrl: '/' });
+    return true;
+  }
+  return false;
+};
 
 interface WarningBannerProps {
   session: {
@@ -146,7 +155,9 @@ export default function MobileScheduleList({
         alert('오프가 삭제되었습니다.');
         onRefresh();
       } catch (error: any) {
-        alert(error.message || '오프 삭제에 실패했습니다.');
+        if (!handleApiError(error)) {
+          alert(error.message || '오프 삭제에 실패했습니다.');
+        }
       }
     } else {
       const newMemo = prompt('비고를 입력하세요 (선택사항):', memo || '');
@@ -156,7 +167,9 @@ export default function MobileScheduleList({
         alert('오프가 수정되었습니다.');
         onRefresh();
       } catch (error: any) {
-        alert(error.message || '오프 수정에 실패했습니다.');
+        if (!handleApiError(error)) {
+          alert(error.message || '오프 수정에 실패했습니다.');
+        }
       }
     }
   };
@@ -170,7 +183,9 @@ export default function MobileScheduleList({
       alert('오프가 삭제되었습니다.');
       onRefresh();
     } catch (error: any) {
-      alert(error.message || '오프 삭제에 실패했습니다.');
+      if (!handleApiError(error)) {
+        alert(error.message || '오프 삭제에 실패했습니다.');
+      }
     }
   };
 

@@ -16,7 +16,7 @@ const normalizeToMMDD = (str: string) => {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const SHEET_OFF = '2026년_오프';
-  const GID_OFF = 933792371;
+  const GID_OFF = 1135506325;
 
   let session: any = null;
 
@@ -56,7 +56,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(403).json({ error: 'Permission denied. Admin only.' });
   }
 
-  if (req.method === 'POST') {
+    let dynamicGidOff = GID_OFF;
+    try {
+      const gidResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: '연차계산!B20',
+      });
+      const fetchedGid = gidResponse.data.values?.[0]?.[0];
+      if (fetchedGid) {
+        dynamicGidOff = parseInt(fetchedGid, 10);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch dynamic GID for Off, utilizing fallback:", e);
+    }
+
+    if (req.method === 'POST') {
     const { name, date, memo } = req.body;
     if (!name || !date) {
       return res.status(400).json({ error: 'Missing name or date' });
@@ -173,7 +187,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             {
               deleteDimension: {
                 range: {
-                  sheetId: GID_OFF,
+                  sheetId: dynamicGidOff,
                   dimension: "ROWS",
                   startIndex: rowIndexToDelete,
                   endIndex: rowIndexToDelete + 1

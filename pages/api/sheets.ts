@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const SHEET_SUMMARY = '연차계산'; // 요약 정보
   const SHEET_CALENDAR = '2026년';  // 달력 상세 정보
   const SHEET_OFF = '2026년_오프';
-  const GID_OFF = "933792371";
+  const GID_OFF = "1135506325";
 
   try {
     session = await getServerSession(req, res, authOptions);
@@ -49,10 +49,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         item.name, item.role, item.date, item.total, item.used, item.memo
       ]);
 
-      // 1. 기존 데이터 지우기
       await sheets.spreadsheets.values.clear({
         spreadsheetId,
-        range: `${SHEET_SUMMARY}!A2:F1000`
+        range: `${SHEET_SUMMARY}!A2:F15`
       });
 
       // 2. 새 데이터 쓰기
@@ -98,7 +97,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const [resSummary, resCalendar, resOff] = await Promise.all([
             sheets.spreadsheets.values.get({
               spreadsheetId,
-              range: `${SHEET_SUMMARY}!A2:F`,
+              range: `${SHEET_SUMMARY}!A2:F15`,
             }),
             sheets.spreadsheets.values.get({
               spreadsheetId,

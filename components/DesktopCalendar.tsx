@@ -4,6 +4,15 @@ import { CalendarDays, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { Staff } from '@/types';
 import { parseLeaveDate, isValidDate } from '@/lib/date';
 import { addOff, updateOff, deleteOff } from '@/services/off';
+import { signOut } from "next-auth/react";
+
+const handleApiError = (e: any) => {
+  if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
+    signOut({ callbackUrl: '/' });
+    return true;
+  }
+  return false;
+};
 
 interface WarningBannerProps {
   session: {
@@ -187,7 +196,9 @@ export default function DesktopCalendar({
           await deleteOff(name, originalDate);
           onRefresh();
         } catch (e: any) {
-          alert("삭제 실패: " + e.message);
+          if (!handleApiError(e)) {
+            alert("삭제 실패: " + e.message);
+          }
         }
       }
     } else if (action === "1") {
@@ -197,7 +208,9 @@ export default function DesktopCalendar({
         await updateOff(name, originalDate, newDate);
         onRefresh();
       } catch (e: any) {
-        alert("수정 실패: " + e.message);
+        if (!handleApiError(e)) {
+          alert("수정 실패: " + e.message);
+        }
       }
     }
   };
@@ -226,7 +239,9 @@ export default function DesktopCalendar({
       await addOff(staff.name, defaultDate);
       onRefresh();
     } catch (e: any) {
-      alert("오프 추가 실패: " + e.message);
+      if (!handleApiError(e)) {
+        alert("오프 추가 실패: " + e.message);
+      }
     }
   };
 
@@ -359,7 +374,13 @@ export default function DesktopCalendar({
                         onClick={(e) => {
                           e.stopPropagation();
                           if(confirm(`${off.name}님의 오프를 삭제하시겠습니까?`)) {
-                             deleteOff(off.name, off.originalDate).then(onRefresh).catch(e => alert(e.message));
+                             deleteOff(off.name, off.originalDate)
+                               .then(onRefresh)
+                               .catch(e => {
+                                 if (!handleApiError(e)) {
+                                   alert(e.message);
+                                 }
+                               });
                           }
                         }}
                          className="opacity-0 group-hover/off:opacity-100 p-0.5 rounded hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-500 hover:text-blue-700 transition-opacity ml-1 shrink-0"
