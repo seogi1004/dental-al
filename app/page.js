@@ -395,6 +395,17 @@ export default function DentalLeaveApp() {
       return;
     }
     
+    // 중복 검사: 해당 날짜에 이미 등록된 사람인지 확인
+    const existingLeave = staff.leaves?.find(leafObj => {
+      const { date } = parseLeaveDate(leafObj.parsed);
+      return date === dateStr;
+    });
+    
+    if (existingLeave) {
+      alert(`${staff.name}님은 이 날짜에 이미 연차가 등록되어 있습니다.\n\n기존: ${existingLeave.original}\n\n수정이 필요하면 기존 항목을 클릭해주세요.`);
+      return;
+    }
+    
     const finalDate = typeUpper ? `${baseDate} ${typeUpper}` : baseDate;
     
     setStatusMsg("추가 중...");
@@ -546,7 +557,6 @@ export default function DentalLeaveApp() {
                     className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-70 transition-opacity"
                     title={item.warning || undefined}
                   >
-                    {item.isDuplicate && <span className="shrink-0">⚠️</span>}
                     <span className={`text-sm font-bold ${item.isDuplicate ? 'text-red-700 dark:text-red-300' : isPast ? 'text-gray-500 dark:text-gray-400' : 'text-[#8D7B68] dark:text-[#A4907C]'}`}>
                       {formatDate(item.original)}
                     </span>
@@ -732,9 +742,7 @@ export default function DentalLeaveApp() {
                                         className="flex-1 flex items-center gap-1 min-w-0 truncate"
                                         title={person.warning || `${person.name} (${person.role}) - 클릭하여 수정`}
                                     >
-                                        {person.isDuplicate && <span className="shrink-0">⚠️</span>}
                                         <strong className="truncate">{person.name}</strong>
-                                        <span className="opacity-70 text-[10px] shrink-0">{person.role}</span>
                                         {person.type === 'AM' && <span className="text-[9px] bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200 px-1 rounded shrink-0">AM</span>}
                                         {person.type === 'PM' && <span className="text-[9px] bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200 px-1 rounded shrink-0">PM</span>}
                                     </div>
@@ -775,11 +783,11 @@ export default function DentalLeaveApp() {
             {/* 섹션 1 */}
             <div>
                 <h4 className="font-bold text-[#8D7B68] dark:text-[#A4907C] mb-2 flex items-center gap-2">
-                    1. 역할 분리
+                    1. 권한 안내
                 </h4>
                 <ul className="list-disc pl-4 space-y-1">
-                    <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">웹 (여기)</strong>: 조회, 직원 관리, 연차 수정/삭제 <span className="text-xs text-red-500">(관리자)</span></li>
-                    <li><strong className="text-green-600 dark:text-green-400">구글 시트</strong>: 연차 날짜 <strong>추가</strong> (드래그 입력)</li>
+                    <li><strong className="text-[#5C5552] dark:text-[#E0E0E0]">관리자</strong>: 연차 추가/수정/삭제, 직원 관리 <span className="text-xs text-green-600">(편집 권한 필요)</span></li>
+                    <li><strong className="text-[#A4907C] dark:text-[#C4B09C]">일반 사용자</strong>: 달력 조회만 가능</li>
                 </ul>
             </div>
 
@@ -822,9 +830,9 @@ export default function DentalLeaveApp() {
                     3. 데이터 확인 및 경고
                 </h4>
                 <ul className="list-disc pl-4 space-y-1">
-                    <li><span className="text-red-500 font-bold">⚠️ 경고</span>: 중복 입력 시 빨간색으로 표시됩니다.</li>
-                    <li><span className="text-amber-500 font-bold">⚠️ 확인 필요</span>: 날짜 형식이 잘못되면 상단에 표시됩니다.</li>
-                    <li>잘못된 데이터는 달력 우측 상단에도 표시됩니다.</li>
+                    <li><span className="text-red-500 font-bold">빨간 배경</span>: 같은 날 중복 입력 시 표시됩니다.</li>
+                    <li><span className="text-amber-500 font-bold">⚠️ 스프레드시트 확인</span>: 날짜 형식 오류 시 우측 상단에 표시됩니다.</li>
+                    <li>상세 오류 목록은 달력 위에서 확인 가능합니다.</li>
                 </ul>
             </div>
 
@@ -924,21 +932,14 @@ export default function DentalLeaveApp() {
                             </div>
                             <div className="col-span-2">
                                  {invalidLeaves.length > 0 ? (
-                                    <div className="h-full bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-700 p-5 flex flex-col justify-center transition-colors">
-                                        <div className="flex items-center gap-2 mb-2 text-amber-800 dark:text-amber-300 font-bold">
-                                            <span className="text-xl">⚠️</span> 확인 필요 ({invalidLeaves.length}건)
-                                        </div>
-                                        <div className="text-xs text-amber-700 dark:text-amber-400 overflow-y-auto max-h-[60px] custom-scrollbar space-y-1">
-                                            {invalidLeaves.map((item, i) => (
-                                                <div key={i} className="truncate">
-                                                    • <strong>{item.name}</strong>: "{item.original}"
-                                                </div>
-                                            ))}
-                                        </div>
+                                    <div className="h-full bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-700 p-5 flex items-center justify-center transition-colors">
+                                        <p className="text-amber-800 dark:text-amber-300 font-medium text-center">
+                                            ⚠️ 스프레드시트 확인이 필요합니다
+                                        </p>
                                     </div>
                                  ) : (
-                                    <div className="h-full bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#F0EAE4] dark:border-[#333333] p-5 flex items-center justify-center text-[#DBCCC0] dark:text-[#444444] font-medium transition-colors">
-                                       오늘도 좋은 하루 보내세요! ✨
+                                    <div className="h-full bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#F0EAE4] dark:border-[#333333] p-5 flex items-center justify-center text-[#A4907C] dark:text-[#C4B09C] font-medium transition-colors">
+                                       좋은 하루 보내세요 ☀️
                                     </div>
                                  )}
                             </div>

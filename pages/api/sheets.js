@@ -70,39 +70,46 @@ export default async function handler(req, res) {
     try {
       let summaryRows = [];
       let calendarRows = [];
+      let fetchedViaApi = false;
 
       // --------------------------------------------------------
       // CASE 1: 로그인 유저 -> Google API 사용 (정확함)
       // --------------------------------------------------------
-      if (session) {
-        const auth = new google.auth.OAuth2(
-          process.env.GOOGLE_CLIENT_ID,
-          process.env.GOOGLE_CLIENT_SECRET
-        );
-        auth.setCredentials({ access_token: session.accessToken });
-        const sheets = google.sheets({ version: 'v4', auth });
-        const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+      if (session && session.accessToken) {
+        try {
+          const auth = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET
+          );
+          auth.setCredentials({ access_token: session.accessToken });
+          const sheets = google.sheets({ version: 'v4', auth });
+          const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-        // 두 시트 동시에 요청
-        const [resSummary, resCalendar] = await Promise.all([
-          sheets.spreadsheets.values.get({
-            spreadsheetId,
-            range: `${SHEET_SUMMARY}!A2:F`,
-          }),
-          sheets.spreadsheets.values.get({
-            spreadsheetId,
-            range: `${SHEET_CALENDAR}!A3:ZZ`, // 3행부터, E열(인덱스 4) 이후 데이터 검색
-          })
-        ]);
+          // 두 시트 동시에 요청
+          const [resSummary, resCalendar] = await Promise.all([
+            sheets.spreadsheets.values.get({
+              spreadsheetId,
+              range: `${SHEET_SUMMARY}!A2:F`,
+            }),
+            sheets.spreadsheets.values.get({
+              spreadsheetId,
+              range: `${SHEET_CALENDAR}!A3:ZZ`, // 3행부터, E열(인덱스 4) 이후 데이터 검색
+            })
+          ]);
 
-        summaryRows = resSummary.data.values || [];
-        calendarRows = resCalendar.data.values || [];
+          summaryRows = resSummary.data.values || [];
+          calendarRows = resCalendar.data.values || [];
+          fetchedViaApi = true;
+        } catch (apiError) {
+          console.error("Google API Fetch Failed (Falling back to CSV):", apiError.message);
+          // API 실패 시 아래 CSV 로직으로 넘어감
+        }
       } 
       
       // --------------------------------------------------------
-      // CASE 2: 비로그인 유저 -> CSV 파싱 (공개 링크)
+      // CASE 2: 비로그인 유저 또는 API 실패 시 -> CSV 파싱 (공개 링크)
       // --------------------------------------------------------
-      else {
+      if (!fetchedViaApi) {
         // [수정됨] 보내주신 시트 ID (URL 중간에 있는 긴 문자열)
         const SHEET_ID = "1dmMlb4IxUQO9AZBVSAgS72cXDJqWDLicx-FL0IzH5Eo";
         
