@@ -13,7 +13,7 @@ import { useTheme } from "next-themes";
 import { Staff } from '@/types';
 import { theme } from '@/lib/theme';
 import { getTodayString, formatDate, parseLeaveDate } from '@/lib/date';
-import { UserMenu, TodayStatusCard, MobileScheduleList, DesktopCalendar, HelpPanel } from '@/components';
+import { UserMenu, TodayStatusCard, MobileScheduleList, DesktopCalendar, HelpPanel, WarningBanner } from '@/components';
 import { useSheetData, useLeaveCalculations } from '@/hooks';
 import { addLeave, updateLeave, deleteLeave } from '@/services';
 
@@ -534,11 +534,12 @@ export default function DentalLeaveApp() {
                              </div>
                              <div className="col-span-2">
                                   {invalidLeaves.length > 0 || sundayLeaves.length > 0 ? (
-                                     <div className="h-full bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-700 p-5 flex items-center justify-center transition-colors">
-                                         <p className="text-amber-800 dark:text-amber-300 font-medium text-center">
-                                             ⚠️ 직원 일정 확인이 필요합니다
-                                         </p>
-                                     </div>
+                                     <WarningBanner 
+                                       session={session} 
+                                       invalidLeaves={invalidLeaves} 
+                                       sundayLeaves={sundayLeaves}
+                                       className="h-full mb-0 overflow-y-auto"
+                                     />
                                   ) : (
                                      <div className="h-full bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#F0EAE4] dark:border-[#333333] p-5 flex items-center justify-center text-[#A4907C] dark:text-[#C4B09C] font-medium transition-colors">
                                         좋은 하루 보내세요 ☀️
@@ -560,6 +561,7 @@ export default function DentalLeaveApp() {
                               handleLeaveAdd: handleLeaveAddWrapper
                             }}
                             onRefresh={fetchSheetData}
+                            showWarning={false}
                           />
                      </div>
 
