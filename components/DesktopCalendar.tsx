@@ -6,6 +6,7 @@ import { parseLeaveDate, isValidDate, formatDate } from '@/lib/date';
 import { addOff, updateOff, deleteOff } from '@/services/off';
 import { signOut } from "next-auth/react";
 import { MESSAGES } from '@/lib/messages';
+import { useState } from 'react';
 
 const handleApiError = (e: any) => {
   if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
@@ -128,6 +129,8 @@ export default function DesktopCalendar({
 }: DesktopCalendarProps) {
   const { handleLeaveClick, handleLeaveDelete, handleLeaveAdd } = handlers;
   
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
@@ -135,6 +138,7 @@ export default function DesktopCalendar({
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const moveMonth = (delta: number) => {
+    setSlideDirection(delta > 0 ? 'right' : 'left');
     const newDate = new Date(viewDate);
     newDate.setMonth(newDate.getMonth() + delta);
     setViewDate(newDate);
@@ -282,7 +286,13 @@ export default function DesktopCalendar({
 
       {showWarning && <WarningBanner session={session} invalidLeaves={invalidLeaves} sundayLeaves={sundayLeaves} />}
 
-      <div className="grid grid-cols-7 border-t border-l border-[#F0EAE4] dark:border-[#333333]">
+      <div 
+        key={viewDate.toString()}
+        className={`grid grid-cols-7 border-t border-l border-[#F0EAE4] dark:border-[#333333] animate-in fade-in duration-300 ${
+          slideDirection === 'right' ? 'slide-in-from-right-10' : 
+          slideDirection === 'left' ? 'slide-in-from-left-10' : ''
+        }`}
+      >
         {weekDays.map((day, i) => (
           <div key={day} className={`text-center text-xs font-bold py-2 border-r border-b border-[#F0EAE4] dark:border-[#333333] bg-[#FDFBF7] dark:bg-[#121212] ${i===0 ? 'text-red-400' : i===6 ? 'text-blue-400' : 'text-[#8D7B68] dark:text-[#A4907C]'}`}>
             {day}
