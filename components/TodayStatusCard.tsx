@@ -66,7 +66,7 @@ export default function TodayStatusCard({ todayLeaves, todayOffs, loading, statu
         )}
       </div>
       <div className="flex flex-col items-end gap-1">
-        <div className={`bg-white/20 p-3 rounded-full transition-all duration-300 ${spin ? 'animate-spin' : ''}`}>
+        <div className={`bg-white/20 p-3 rounded-full transition-all duration-300 ${spin ? 'animate-spin-slow' : ''}`}>
           <StatusIcon className="w-6 h-6 text-white" />
         </div>
         <span className="text-[10px] opacity-80 font-medium">{displayStatus}</span>
