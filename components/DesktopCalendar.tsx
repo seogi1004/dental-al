@@ -319,7 +319,7 @@ export default function DesktopCalendar({
               <div className="mt-1 flex flex-col gap-1 overflow-y-auto max-h-[calc(100%-28px)] custom-scrollbar">
                 {leaves.map((person, idx) => (
                   <div key={idx} 
-                    className={`text-xs px-1.5 py-0.5 rounded border flex items-center justify-between group/item cursor-pointer transition-colors
+                    className={`text-xs px-1.5 py-0.5 rounded border flex items-center justify-between group/item ${session?.isAdmin ? 'cursor-pointer' : 'cursor-default'} transition-colors
                       ${person.isDuplicate
                         ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
                         : person.isSunday
