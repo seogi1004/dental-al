@@ -590,14 +590,14 @@ export default function DentalLeaveApp() {
              </div>
          </div>
 
-         {activeTab === 'list' && (
-           <div className="p-4 md:p-8 bg-[#FDFBF7] dark:bg-[#121212] h-full transition-colors duration-300">
-             <div className="w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-                 
-                 <div className={`transition-all duration-300 ${isSidebarOpen ? 'lg:col-span-9' : 'lg:col-span-12'}`}>
-                      <div className="md:hidden mb-6">
-                         <div className="mb-4">
-                           <TodayStatusCard 
+          {activeTab === 'list' && (
+            <div className="p-4 md:p-8 bg-[#FDFBF7] dark:bg-[#121212] h-full transition-colors duration-300">
+              <div className="w-full mx-auto flex flex-col lg:flex-row gap-y-6">
+                  
+                  <div className="flex-1 min-w-0 transition-all duration-300">
+                       <div className="md:hidden mb-6">
+                          <div className="mb-4">
+                            <TodayStatusCard 
                               todayLeaves={getTodayLeaves()} 
                               todayOffs={getTodayOffs()}
                               loading={loading} 
@@ -690,17 +690,19 @@ export default function DentalLeaveApp() {
                                {renderStaffCards()}
                              </>
                          )}
-                     </div>
-                 </div>
+                      </div>
+                  </div>
 
-                 {isSidebarOpen && (
-                   <div className="hidden lg:block lg:col-span-3">
-                       <HelpPanel />
-                   </div>
-                 )}
-             </div>
-           </div>
-         )}
+                  <div className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
+                    isSidebarOpen ? 'w-80 opacity-100 ml-6' : 'w-0 opacity-0 ml-0'
+                  }`}>
+                      <div className="w-80">
+                        <HelpPanel />
+                      </div>
+                  </div>
+              </div>
+            </div>
+          )}
 
           {activeTab === 'form' && (
   <div className="p-8 bg-[#FDFBF7] dark:bg-[#121212] flex flex-col items-center transition-colors duration-300 flex-1">
