@@ -693,8 +693,8 @@ export default function DentalLeaveApp() {
                       </div>
                   </div>
 
-                  <div className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
-                    isSidebarOpen ? 'w-80 opacity-100 ml-6' : 'w-0 opacity-0 ml-0'
+                  <div className={`hidden lg:block overflow-hidden transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
+                    isSidebarOpen ? 'max-w-[320px] opacity-100 ml-6 translate-x-0' : 'max-w-0 opacity-0 ml-0 translate-x-10'
                   }`}>
                       <div className="w-80">
                         <HelpPanel />
