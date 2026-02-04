@@ -314,7 +314,7 @@ export default function DesktopCalendar({
                   : ''
               }`}>
               <div className="flex items-center justify-between px-1 mb-1">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <span className={`text-sm font-bold flex items-center justify-center w-6 h-6 rounded-full ${
                     isToday 
                       ? 'bg-[#8D7B68] dark:bg-[#5C4A3A] text-white' 
@@ -326,14 +326,14 @@ export default function DesktopCalendar({
                   }`}>
                     {day}
                   </span>
-                  {displayHolidayName && (
-                    <span className="text-[10px] font-medium text-red-500 dark:text-red-400 bg-white/60 dark:bg-black/20 px-1.5 py-0.5 rounded-md border border-red-100 dark:border-red-900/30 truncate max-w-[60px]">
-                      {displayHolidayName}
-                    </span>
+                  {dayOfWeek === 0 && offs.length > 0 && (
+                    <span className="text-[10px] text-red-500 font-bold" title="일요일 오프 주의">!</span>
                   )}
                 </div>
-                {dayOfWeek === 0 && offs.length > 0 && (
-                  <span className="ml-1 text-[10px] text-red-500 font-bold" title="일요일 오프 주의">!</span>
+                {displayHolidayName && (
+                  <span className="text-[10px] font-medium text-red-500 dark:text-red-400 bg-white/60 dark:bg-black/20 px-1.5 py-0.5 rounded-md border border-red-100 dark:border-red-900/30 truncate max-w-[60px]">
+                    {displayHolidayName}
+                  </span>
                 )}
                 {session?.isAdmin && !isRedDay && (
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-1.5">
