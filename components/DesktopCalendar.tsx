@@ -15,6 +15,29 @@ const handleApiError = (e: any) => {
   return false;
 };
 
+const HOLIDAYS_2026: Record<string, string> = {
+  "2026-01-01": "신정",
+  "2026-02-16": "설날",
+  "2026-02-17": "설날",
+  "2026-02-18": "설날",
+  "2026-03-01": "삼일절",
+  "2026-03-02": "대체공휴일",
+  "2026-05-05": "어린이날",
+  "2026-05-24": "부처님오신날",
+  "2026-05-25": "대체공휴일",
+  "2026-06-03": "지방선거",
+  "2026-06-06": "현충일",
+  "2026-08-15": "광복절",
+  "2026-08-17": "대체공휴일",
+  "2026-09-24": "추석",
+  "2026-09-25": "추석",
+  "2026-09-26": "추석",
+  "2026-10-03": "개천절",
+  "2026-10-05": "대체공휴일",
+  "2026-10-09": "한글날",
+  "2026-12-25": "성탄절"
+};
+
 export interface WarningBannerProps {
   session: {
     isAdmin: boolean;
@@ -278,26 +301,41 @@ export default function DesktopCalendar({
           const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
           const dateObj = new Date(year, month, day);
           const dayOfWeek = dateObj.getDay();
+          const holidayName = HOLIDAYS_2026[dateStr];
+          const isRedDay = dayOfWeek === 0 || holidayName;
 
           return (
-            <div key={day} className={`h-24 border-r border-b border-[#F0EAE4] dark:border-[#333333] p-1 relative hover:bg-[#FDFBF7] dark:hover:bg-[#252525] transition group ${isToday ? 'bg-[#FFF9F0] dark:bg-[#2C241B]' : ''}`}>
-              <div className="flex items-center justify-between px-1">
-                <span className={`text-sm font-bold flex items-center justify-center w-6 h-6 rounded-full ${
-                  isToday 
-                    ? 'bg-[#8D7B68] dark:bg-[#5C4A3A] text-white' 
-                    : dayOfWeek === 0 
-                      ? 'text-red-400' 
-                      : dayOfWeek === 6 
-                        ? 'text-blue-400' 
-                        : 'text-[#5C5552] dark:text-[#A0A0A0]'
-                }`}>
-                  {day}
-                </span>
+            <div key={day} className={`h-24 border-r border-b border-[#F0EAE4] dark:border-[#333333] p-1 relative hover:bg-[#FDFBF7] dark:hover:bg-[#252525] transition group 
+              ${isToday 
+                ? 'bg-[#FFF9F0] dark:bg-[#2C241B]' 
+                : holidayName 
+                  ? 'bg-red-50/50 dark:bg-red-900/10' 
+                  : ''
+              }`}>
+              <div className="flex items-center justify-between px-1 mb-1">
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-sm font-bold flex items-center justify-center w-6 h-6 rounded-full ${
+                    isToday 
+                      ? 'bg-[#8D7B68] dark:bg-[#5C4A3A] text-white' 
+                      : isRedDay 
+                        ? 'text-red-400' 
+                        : dayOfWeek === 6 
+                          ? 'text-blue-400' 
+                          : 'text-[#5C5552] dark:text-[#A0A0A0]'
+                  }`}>
+                    {day}
+                  </span>
+                  {holidayName && (
+                    <span className="text-[10px] font-medium text-red-500 dark:text-red-400 bg-white/60 dark:bg-black/20 px-1.5 py-0.5 rounded-md border border-red-100 dark:border-red-900/30 truncate max-w-[60px]">
+                      {holidayName}
+                    </span>
+                  )}
+                </div>
                 {dayOfWeek === 0 && offs.length > 0 && (
                   <span className="ml-1 text-[10px] text-red-500 font-bold" title="일요일 오프 주의">!</span>
                 )}
                 {session?.isAdmin && (
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-1.5">
                     <button 
                       onClick={() => handleOffAdd(dateStr)}
                       className="px-1 py-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 dark:text-blue-400 text-[10px] font-bold leading-none border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all"
