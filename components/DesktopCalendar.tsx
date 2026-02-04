@@ -17,9 +17,9 @@ const handleApiError = (e: any) => {
 
 const HOLIDAYS_2026: Record<string, string> = {
   "2026-01-01": "신정",
-  "2026-02-16": "설날",
+  "2026-02-16": "HIDDEN", 
   "2026-02-17": "설날",
-  "2026-02-18": "설날",
+  "2026-02-18": "HIDDEN", 
   "2026-03-01": "삼일절",
   "2026-03-02": "대체공휴일",
   "2026-05-05": "어린이날",
@@ -29,9 +29,9 @@ const HOLIDAYS_2026: Record<string, string> = {
   "2026-06-06": "현충일",
   "2026-08-15": "광복절",
   "2026-08-17": "대체공휴일",
-  "2026-09-24": "추석",
+  "2026-09-24": "HIDDEN", 
   "2026-09-25": "추석",
-  "2026-09-26": "추석",
+  "2026-09-26": "HIDDEN", 
   "2026-10-03": "개천절",
   "2026-10-05": "대체공휴일",
   "2026-10-09": "한글날",
@@ -302,7 +302,8 @@ export default function DesktopCalendar({
           const dateObj = new Date(year, month, day);
           const dayOfWeek = dateObj.getDay();
           const holidayName = HOLIDAYS_2026[dateStr];
-          const isRedDay = dayOfWeek === 0 || holidayName;
+          const isRedDay = dayOfWeek === 0 || !!holidayName;
+          const displayHolidayName = holidayName === "HIDDEN" ? null : holidayName;
 
           return (
             <div key={day} className={`h-24 border-r border-b border-[#F0EAE4] dark:border-[#333333] p-1 relative hover:bg-[#FDFBF7] dark:hover:bg-[#252525] transition group 
@@ -325,16 +326,16 @@ export default function DesktopCalendar({
                   }`}>
                     {day}
                   </span>
-                  {holidayName && (
+                  {displayHolidayName && (
                     <span className="text-[10px] font-medium text-red-500 dark:text-red-400 bg-white/60 dark:bg-black/20 px-1.5 py-0.5 rounded-md border border-red-100 dark:border-red-900/30 truncate max-w-[60px]">
-                      {holidayName}
+                      {displayHolidayName}
                     </span>
                   )}
                 </div>
                 {dayOfWeek === 0 && offs.length > 0 && (
                   <span className="ml-1 text-[10px] text-red-500 font-bold" title="일요일 오프 주의">!</span>
                 )}
-                {session?.isAdmin && (
+                {session?.isAdmin && !isRedDay && (
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-1.5">
                     <button 
                       onClick={() => handleOffAdd(dateStr)}
