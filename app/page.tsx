@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Printer, Plus, Calendar, User, FileText, 
   Trash2, Moon, Sun, PanelRightOpen, PanelRightClose,
-  Github
+  Github, Edit2
 } from 'lucide-react';
 
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -354,12 +354,24 @@ export default function DentalLeaveApp() {
         <thead className="text-[11px] text-[#8D7B68] dark:text-[#A4907C] uppercase bg-[#F2EBE5] dark:bg-[#2D2D2D]">
           <tr>
             <th className="px-3 py-2">이름</th>
-            <th className="px-3 py-2">직급</th>
-            <th className="px-3 py-2">입사일</th>
-            <th className="px-3 py-2 text-center">발생</th>
+            <th className="px-3 py-2">
+              직급
+              {isAdmin && <Edit2 className="w-3 h-3 inline ml-1 opacity-50" />}
+            </th>
+            <th className="px-3 py-2">
+              입사일
+              {isAdmin && <Edit2 className="w-3 h-3 inline ml-1 opacity-50" />}
+            </th>
+            <th className="px-3 py-2 text-center">
+              발생
+              {isAdmin && <Edit2 className="w-3 h-3 inline ml-1 opacity-50" />}
+            </th>
             <th className="px-3 py-2 text-center">사용</th>
             <th className="px-3 py-2 text-center">잔여</th>
-            <th className="px-3 py-2">비고</th>
+            <th className="px-3 py-2">
+              비고
+              {isAdmin && <Edit2 className="w-3 h-3 inline ml-1 opacity-50" />}
+            </th>
             {isAdmin && <th className="px-3 py-2 text-center">관리</th>}
           </tr>
         </thead>
@@ -367,14 +379,14 @@ export default function DentalLeaveApp() {
           {staffData.map((staff, index) => (
             <tr key={index} className="bg-white dark:bg-[#1E1E1E] hover:bg-[#FDFBF7] dark:hover:bg-[#252525]">
               <td className="px-3 py-2 font-bold whitespace-nowrap">
-                {isAdmin ? (
+                {isAdmin && staff.isNew ? (
                   <input 
                     type="text" 
                     value={staff.name} 
                     onChange={(e) => handleUpdate(index, 'name', e.target.value)}
                     onBlur={handleBlur}
-                    readOnly={!staff.isNew} 
-                    className={`bg-transparent border-none focus:ring-0 w-20 p-0 ${!staff.isNew ? 'cursor-default' : 'border-b border-[#A4907C]'}`}
+                    placeholder="이름"
+                    className="bg-transparent border-b border-[#A4907C] focus:ring-0 w-20 p-0"
                   />
                 ) : staff.name}
               </td>
@@ -446,14 +458,14 @@ export default function DentalLeaveApp() {
           <div className="flex justify-between items-start mb-3">
             <div>
               <div className="flex items-center gap-2">
-                {isAdmin ? (
+                {isAdmin && staff.isNew ? (
                    <input 
                      type="text" 
                      value={staff.name} 
                      onChange={(e) => handleUpdate(index, 'name', e.target.value)}
                      onBlur={handleBlur}
-                     readOnly={!staff.isNew} 
-                     className="bg-transparent font-bold text-lg text-[#5C5552] dark:text-[#E0E0E0] w-24 p-0 border-b border-transparent focus:border-[#A4907C]"
+                     placeholder="이름"
+                     className="bg-transparent font-bold text-lg text-[#5C5552] dark:text-[#E0E0E0] w-24 p-0 border-b border-[#A4907C] focus:border-[#A4907C]"
                    />
                 ) : <span className="font-bold text-lg text-[#5C5552] dark:text-[#E0E0E0] w-24 inline-block">{staff.name}</span>}
                 <span className="text-xs bg-white dark:bg-[#1E1E1E] border border-[#EBE5DD] dark:border-[#444444] px-1.5 py-0.5 rounded text-[#8D7B68] dark:text-[#A4907C] w-10 inline-flex justify-center items-center">
