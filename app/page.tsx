@@ -118,7 +118,7 @@ export default function DentalLeaveApp() {
       }
     } catch(e) {}
     
-    const newValue = prompt(MESSAGES.leave.edit.prompt, displayDate);
+    const newValue = prompt(MESSAGES.leave.edit.prompt(displayDate), displayDate);
     if (newValue === null) return;
     if (newValue.trim() === '' || newValue.trim() === originalDate) return;
     

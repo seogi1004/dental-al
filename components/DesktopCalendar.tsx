@@ -425,8 +425,8 @@ export default function DesktopCalendar({
                       title={person.warning || `${person.name} (${person.role}) - 클릭하여 수정`}
                     >
                       <strong className="truncate">{person.name}</strong>
-                      {person.type === 'AM' && <span className="text-[10px] bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200 px-1 rounded shrink-0">AM</span>}
-                      {person.type === 'PM' && <span className="text-[10px] bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200 px-1 rounded shrink-0">PM</span>}
+                      {person.type === 'AM' && <span className="text-[9px] bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200 px-0.5 rounded shrink-0 leading-none">AM</span>}
+                      {person.type === 'PM' && <span className="text-[9px] bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200 px-0.5 rounded shrink-0 leading-none">PM</span>}
                     </div>
                     {session?.isAdmin && (
                       <button 
@@ -453,12 +453,12 @@ export default function DesktopCalendar({
                        }}
                        title={`${off.name} OFF ${off.memo ? `(${off.memo})` : ''}`}
                    >
-                     <div className="flex items-center gap-1 min-w-0 truncate">
-                       <span className="font-medium truncate">{off.name}</span>
-                       <span className="text-[10px] bg-blue-200 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200 px-1 py-0.5 rounded font-bold shrink-0">
-                         {off.type === 'AM' ? 'OFFA' : off.type === 'PM' ? 'OFFP' : 'OFF'}
-                       </span>
-                     </div>
+                      <div className="flex items-center gap-1 min-w-0 truncate">
+                        <span className="font-medium truncate">{off.name}</span>
+                        <span className="text-[9px] bg-blue-200 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200 px-0.5 py-0 rounded font-bold shrink-0 leading-none">
+                          {off.type === 'AM' ? 'OFFA' : off.type === 'PM' ? 'OFFP' : 'OFF'}
+                        </span>
+                      </div>
                      {session?.isAdmin && (
                       <button
                         onClick={(e) => {

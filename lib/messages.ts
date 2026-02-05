@@ -7,7 +7,7 @@ export const MESSAGES = {
       failure: (error: string) => `추가 실패: ${error}`,
     },
     edit: {
-      prompt: `연차 날짜를 수정하세요 (M/D 형식):\n예: 1/15, 1/15 AM, 1/15 PM`,
+      prompt: (originalDate: string) => `연차 날짜를 수정하세요 (M/D 형식):\n예: 1/15, 1/15 AM, 1/15 PM`,
       failure: (error: string) => `수정 실패: ${error}`,
     },
     delete: {
