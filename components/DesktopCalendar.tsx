@@ -465,7 +465,7 @@ export default function DesktopCalendar({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if(confirm(MESSAGES.off.delete.desktopConfirm(off.name))) {
+                          if(confirm(MESSAGES.off.delete.confirm(off.name, off.originalDate))) {
                              deleteOff(off.name, off.originalDate)
                                .then(onRefresh)
                                .catch(e => {

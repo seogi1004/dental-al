@@ -194,7 +194,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       if (rowIndexToDelete === -1) {
-        console.log(`[DELETE] Failed to find record for ${name} at ${targetDate}`);
+          for (let i = 0; i < rows.length; i++) {
+              if (rows[i][0]?.trim() === name.trim()) {
+                  const rawRowDate = rows[i][1] || '';
+                  
+                  if (rawRowDate.trim() === date.trim()) {
+                      rowIndexToDelete = i;
+                      break;
+                  }
+
+                  const dateNoSpace = date.replace(/\s+/g, '');
+                  const rowDateNoSpace = rawRowDate.replace(/\s+/g, '');
+                  if (dateNoSpace === rowDateNoSpace) {
+                      rowIndexToDelete = i;
+                      break;
+                  }
+              }
+          }
+      }
+
+      if (rowIndexToDelete === -1) {
+        console.log(`[DELETE] Failed to find record for ${name} at ${targetDate} (Raw: ${date})`);
         return res.status(404).json({ error: 'Off record not found' });
       }
 

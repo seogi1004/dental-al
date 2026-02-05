@@ -28,8 +28,7 @@ export const MESSAGES = {
       failure: (error: string) => error || `오프 수정에 실패했습니다.`,
     },
     delete: {
-      confirm: (name: string, date: string) => `${name}의 ${date} 오프를 삭제하시겠습니까?`,
-      desktopConfirm: (name: string) => `${name}님의 오프를 삭제하시겠습니까?`,
+      confirm: (name: string, date: string) => `${name}님의 오프(${date})를 삭제하시겠습니까?`,
       success: `오프가 삭제되었습니다.`,
       failure: (error: string) => error || `오프 삭제에 실패했습니다.`,
     },
