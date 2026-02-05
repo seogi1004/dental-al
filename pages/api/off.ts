@@ -122,7 +122,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let rowIndexToUpdate = -1;
 
       for (let i = 0; i < rows.length; i++) {
-        if (rows[i][0] === name) {
+        if (rows[i][0]?.trim() === name.trim()) {
           const rowDate = normalizeToMMDD(rows[i][1]);
           if (rowDate === targetDate) {
             rowIndexToUpdate = i;
@@ -177,8 +177,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let rowIndexToDelete = -1;
       
       for (let i = 0; i < rows.length; i++) {
-        if (rows[i][0] === name) {
-          const rowDate = normalizeToMMDD(rows[i][1]);
+        if (rows[i][0]?.trim() === name.trim()) {
+          const rawRowDate = rows[i][1];
+          const rowDate = normalizeToMMDD(rawRowDate);
+          
           if (rowDate === targetDate) {
             rowIndexToDelete = i;
             break;
@@ -187,6 +189,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       if (rowIndexToDelete === -1) {
+        console.log(`[DELETE] Failed to find record for ${name} at ${targetDate}`);
         return res.status(404).json({ error: 'Off record not found' });
       }
 
