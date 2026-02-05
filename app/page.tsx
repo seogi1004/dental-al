@@ -303,8 +303,23 @@ export default function DentalLeaveApp() {
     const dd = String(today.getDate());
     const dateInput = `${mm}/${dd}`;
     
+    const typeInput = prompt(MESSAGES.off.add.typePrompt, "");
+    if (typeInput === null) return;
+    
+    let typeUpper = typeInput.trim().toUpperCase();
+    
+    if (['A', 'AM', '오전'].includes(typeUpper)) typeUpper = 'AM';
+    else if (['P', 'PM', '오후'].includes(typeUpper)) typeUpper = 'PM';
+    
+    if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
+      alert(MESSAGES.validation.invalidType);
+      return;
+    }
+
+    const finalDate = typeUpper ? `${dateInput} ${typeUpper}` : dateInput;
+    
     try {
-      await addOff(staff.name, dateInput);
+      await addOff(staff.name, finalDate);
       fetchSheetData();
     } catch (e: any) {
       console.error(e);

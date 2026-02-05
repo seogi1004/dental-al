@@ -286,8 +286,23 @@ export default function DesktopCalendar({
     const dd = String(d.getDate());
     const defaultDate = `${mm}/${dd}`;
 
+    const typeInput = prompt(MESSAGES.off.add.typePrompt, "");
+    if (typeInput === null) return;
+    
+    let typeUpper = typeInput.trim().toUpperCase();
+    
+    if (['A', 'AM', '오전'].includes(typeUpper)) typeUpper = 'AM';
+    else if (['P', 'PM', '오후'].includes(typeUpper)) typeUpper = 'PM';
+    
+    if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
+      alert(MESSAGES.validation.invalidType);
+      return;
+    }
+
+    const finalDate = typeUpper ? `${defaultDate} ${typeUpper}` : defaultDate;
+
     try {
-      await addOff(staff.name, defaultDate);
+      await addOff(staff.name, finalDate);
       onRefresh();
     } catch (e: any) {
       if (!handleApiError(e)) {

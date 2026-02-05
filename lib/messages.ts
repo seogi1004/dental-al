@@ -18,11 +18,12 @@ export const MESSAGES = {
   off: {
     add: {
       namePrompt: (staffNames: string) => `오프를 추가할 직원 이름을 입력하세요:\n\n현재 직원: ${staffNames}`,
+      typePrompt: `오프 타입을 입력하세요:\n\n• 공백 또는 Enter = 종일 오프\n• AM = 오전 오프\n• PM = 오후 오프`,
       failure: (error: string) => `오프 추가 실패: ${error}`,
     },
     edit: {
-      prompt: (name: string, originalDate: string) => `${name}님의 오프 (${originalDate}) 수정\n\n오프 날짜를 수정하세요 (M/D 형식):\n예: 1/15`,
-      mobilePrompt: `오프 날짜를 수정하세요 (M/D 형식):\n예: 1/15`,
+      prompt: (name: string, originalDate: string) => `${name}님의 오프 (${originalDate}) 수정\n\n오프 날짜를 수정하세요 (M/D 형식):\n예: 1/15, 1/15 AM, 1/15 PM`,
+      mobilePrompt: `오프 날짜를 수정하세요 (M/D 형식):\n예: 1/15, 1/15 AM, 1/15 PM`,
       success: `오프가 수정되었습니다.`,
       failure: (error: string) => error || `오프 수정에 실패했습니다.`,
     },
