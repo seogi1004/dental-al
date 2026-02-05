@@ -455,9 +455,11 @@ export default function DesktopCalendar({
                    >
                       <div className="flex items-center gap-1 min-w-0 truncate">
                         <span className="font-medium truncate">{off.name}</span>
-                        <span className="text-[9px] bg-blue-200 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200 px-0.5 py-0 rounded font-bold shrink-0 leading-none">
-                          {off.type === 'AM' ? 'OFFA' : off.type === 'PM' ? 'OFFP' : 'OFF'}
-                        </span>
+                        {(off.type === 'AM' || off.type === 'PM') && (
+                          <span className="text-[9px] bg-blue-200 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200 px-0.5 py-0 rounded font-bold shrink-0 leading-none">
+                            {off.type}
+                          </span>
+                        )}
                       </div>
                      {session?.isAdmin && (
                       <button

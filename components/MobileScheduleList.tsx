@@ -295,12 +295,10 @@ export default function MobileScheduleList({
                   </span>
                   <div className={`h-4 w-[1px] ${isPast ? 'bg-gray-300 dark:bg-gray-600' : isOff ? 'bg-blue-200 dark:bg-blue-700' : 'bg-[#EBE5DD] dark:bg-[#444444]'}`}></div>
                   <span className={`font-medium ${nameTextClass}`}>{item.name}</span>
-                  {item.listType === 'OFF' ? (
+                  {(item.listType === 'OFF' ? (item.type === 'AM' || item.type === 'PM') : item.type !== 'FULL') && (
                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${badgeColor}`}>
-                       {item.type === 'AM' ? 'OFFA' : item.type === 'PM' ? 'OFFP' : 'OFF'}
+                       {item.listType === 'OFF' ? item.type : item.type}
                      </span>
-                  ) : item.type !== 'FULL' && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${badgeColor}`}>{item.type}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">

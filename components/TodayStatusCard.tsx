@@ -64,8 +64,8 @@ export default function TodayStatusCard({ todayLeaves, todayOffs, loading, statu
               {todayOffs.map((p, i) => (
                 <span key={i} className="flex items-center gap-1">
                   {p.name}
-                  {p.type === 'AM' && <span className="bg-white/20 px-1 rounded text-[10px]">A</span>}
-                  {p.type === 'PM' && <span className="bg-white/20 px-1 rounded text-[10px]">P</span>}
+                  {p.type === 'AM' && <span className="bg-white/20 px-1 rounded text-[10px]">AM</span>}
+                  {p.type === 'PM' && <span className="bg-white/20 px-1 rounded text-[10px]">PM</span>}
                   {i < todayOffs.length - 1 && <span>,</span>}
                 </span>
               ))}
