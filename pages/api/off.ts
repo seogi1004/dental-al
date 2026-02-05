@@ -5,11 +5,19 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 const normalizeToMMDD = (str: string) => {
   if (!str) return '';
+  
+  let type = '';
+  const upperStr = str.toUpperCase();
+  if (upperStr.includes('AM')) type = ' AM';
+  else if (upperStr.includes('PM')) type = ' PM';
+  else if (upperStr.includes('오전')) type = ' AM';
+  else if (upperStr.includes('오후')) type = ' PM';
+
   const clean = str.replace(/[^0-9]/g, ' ').trim().split(/\s+/);
   if (clean.length >= 2) {
     const month = parseInt(clean[clean.length - 2]);
     const day = parseInt(clean[clean.length - 1]);
-    return `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+    return `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}${type}`;
   }
   return str;
 };

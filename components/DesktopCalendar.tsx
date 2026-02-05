@@ -2,7 +2,7 @@
 
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { Staff } from '@/types';
-import { parseLeaveDate, isValidDate, formatDate } from '@/lib/date';
+import { parseLeaveDate, isValidDate } from '@/lib/date';
 import { addOff, updateOff, deleteOff } from '@/services/off';
 import { signOut } from "next-auth/react";
 import { MESSAGES } from '@/lib/messages';
@@ -45,17 +45,35 @@ export interface WarningBannerProps {
   } | null;
   invalidLeaves: Array<{ name: string; original: string }>;
   sundayLeaves: Array<{ name: string; original: string; date?: string }>; // date 추가
+  overlapLeaves?: Array<{ name: string; date: string }>;
   className?: string;
 }
 
-export const WarningBanner = ({ session, invalidLeaves, sundayLeaves, className = "" }: WarningBannerProps) => {
-  if (!session?.isAdmin || (invalidLeaves.length === 0 && sundayLeaves.length === 0)) return null;
+export const WarningBanner = ({ session, invalidLeaves, sundayLeaves, overlapLeaves = [], className = "" }: WarningBannerProps) => {
+  if (!session?.isAdmin || (invalidLeaves.length === 0 && sundayLeaves.length === 0 && overlapLeaves.length === 0)) return null;
 
   return (
     <div className={`mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl ${className}`}>
       <div className="flex items-start gap-3 text-amber-800 dark:text-amber-300">
         <span className="text-xl shrink-0">⚠️</span>
         <div className="flex-1">
+          {overlapLeaves.length > 0 && (
+            <div className="mb-3">
+              <p className="font-bold text-sm mb-2 text-red-600 dark:text-red-400">연차와 오프가 중복되었습니다</p>
+              <ul className="text-xs space-y-1 mb-2">
+                {overlapLeaves.slice(0, 5).map((item, idx) => (
+                  <li key={idx}>
+                    • <strong>{item.name}</strong>: <code className="px-1 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-[10px]">
+                      {item.date}
+                    </code>
+                  </li>
+                ))}
+                {overlapLeaves.length > 5 && (
+                  <li className="opacity-70">... 외 {overlapLeaves.length - 5}건</li>
+                )}
+              </ul>
+            </div>
+          )}
           {invalidLeaves.length > 0 && (
             <div className="mb-3">
               <p className="font-bold text-sm mb-2">잘못된 날짜 형식이 감지되었습니다</p>
@@ -107,6 +125,7 @@ interface DesktopCalendarProps {
   } | null;
   invalidLeaves: Array<{ name: string; original: string }>;
   sundayLeaves: Array<{ name: string; original: string }>;
+  overlapLeaves?: Array<{ name: string; date: string }>;
   handlers: {
     handleLeaveClick: (name: string, original: string, date: string) => void;
     handleLeaveDelete: (name: string, original: string) => void;
@@ -123,6 +142,7 @@ export default function DesktopCalendar({
   session, 
   invalidLeaves, 
   sundayLeaves, 
+  overlapLeaves,
   handlers,
   onRefresh,
   showWarning = true
@@ -199,16 +219,24 @@ export default function DesktopCalendar({
       name: string;
       originalDate: string;
       memo?: string;
+      type?: 'AM' | 'PM';
     }> = [];
 
     staffData.forEach(staff => {
       if (staff.offs) {
         staff.offs.forEach(off => {
           if (off.dateParsed === dateStr) {
+            let type: 'AM' | 'PM' | undefined;
+            if (off.date.toUpperCase().includes('AM')) type = 'AM';
+            else if (off.date.toUpperCase().includes('PM')) type = 'PM';
+            else if (off.date.includes('오전')) type = 'AM';
+            else if (off.date.includes('오후')) type = 'PM';
+
             list.push({
               name: staff.name,
               originalDate: off.date,
-              memo: off.memo
+              memo: off.memo,
+              type
             });
           }
         });
@@ -224,7 +252,7 @@ export default function DesktopCalendar({
     
     if (!newDate || newDate === originalDate) return;
 
-    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])$/;
+    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM|오전|오후))?$/i;
     if (!datePattern.test(newDate.trim())) {
       alert(MESSAGES.validation.invalidOffDate);
       return;
@@ -284,7 +312,7 @@ export default function DesktopCalendar({
         </div>
       </div>
 
-      {showWarning && <WarningBanner session={session} invalidLeaves={invalidLeaves} sundayLeaves={sundayLeaves} />}
+      {showWarning && <WarningBanner session={session} invalidLeaves={invalidLeaves} sundayLeaves={sundayLeaves} overlapLeaves={overlapLeaves} />}
 
       <div 
         key={viewDate.toString()}
@@ -382,8 +410,8 @@ export default function DesktopCalendar({
                       title={person.warning || `${person.name} (${person.role}) - 클릭하여 수정`}
                     >
                       <strong className="truncate">{person.name}</strong>
-                      {person.type === 'AM' && <span className="text-[9px] bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200 px-1 rounded shrink-0">AM</span>}
-                      {person.type === 'PM' && <span className="text-[9px] bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200 px-1 rounded shrink-0">PM</span>}
+                      {person.type === 'AM' && <span className="text-[10px] bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200 px-1 rounded shrink-0">AM</span>}
+                      {person.type === 'PM' && <span className="text-[10px] bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200 px-1 rounded shrink-0">PM</span>}
                     </div>
                     {session?.isAdmin && (
                       <button 
@@ -409,12 +437,14 @@ export default function DesktopCalendar({
                          handleOffClick(off.name, off.originalDate);
                        }}
                        title={`${off.name} OFF ${off.memo ? `(${off.memo})` : ''}`}
-                  >
-                    <div className="flex items-center gap-1 min-w-0 truncate">
-                      <span className="font-medium truncate">{off.name}</span>
-                      <span className="text-[9px] opacity-75 shrink-0">OFF</span>
-                    </div>
-                    {session?.isAdmin && (
+                   >
+                     <div className="flex items-center gap-1 min-w-0 truncate">
+                       <span className="font-medium truncate">{off.name}</span>
+                       <span className="text-[10px] bg-blue-200 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200 px-1 py-0.5 rounded font-bold shrink-0">
+                         {off.type === 'AM' ? 'OFFA' : off.type === 'PM' ? 'OFFP' : 'OFF'}
+                       </span>
+                     </div>
+                     {session?.isAdmin && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

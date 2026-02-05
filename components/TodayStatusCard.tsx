@@ -11,6 +11,7 @@ interface TodayStatusCardProps {
   todayOffs: Array<{
     name: string;
     memo?: string;
+    type?: 'AM' | 'PM';
   }>;
   loading: boolean;
   statusMsg: string;
@@ -31,7 +32,11 @@ export default function TodayStatusCard({ todayLeaves, todayOffs, loading, statu
     StatusIcon = CheckCircle;
   }
 
-  const totalAbsent = todayLeaves.length + todayOffs.length;
+  const uniqueAbsent = new Set([
+    ...todayLeaves.map(l => l.name),
+    ...todayOffs.map(o => o.name)
+  ]);
+  const totalAbsent = uniqueAbsent.size;
 
   return (
     <div className="bg-[#8D7B68] dark:bg-[#5C4A3A] text-white p-5 rounded-2xl shadow-lg flex items-center justify-between mb-4 h-full transition-colors duration-300">
@@ -53,17 +58,19 @@ export default function TodayStatusCard({ todayLeaves, todayOffs, loading, statu
             ))}
           </div>
         )}
-        {todayOffs.length > 0 && (
-          <div className="text-xs mt-2 opacity-90 flex flex-wrap gap-2 text-blue-100">
-             <span className="font-bold mr-1">🔵 오프:</span>
-             {todayOffs.map((p, i) => (
-               <span key={i} className="flex items-center gap-1">
-                 {p.name}
-                 {i < todayOffs.length - 1 && <span>,</span>}
-               </span>
-             ))}
-          </div>
-        )}
+         {todayOffs.length > 0 && (
+           <div className="text-xs mt-2 opacity-90 flex flex-wrap gap-2 text-blue-100">
+              <span className="font-bold mr-1">🔵 오프:</span>
+              {todayOffs.map((p, i) => (
+                <span key={i} className="flex items-center gap-1">
+                  {p.name}
+                  {p.type === 'AM' && <span className="bg-white/20 px-1 rounded text-[10px]">A</span>}
+                  {p.type === 'PM' && <span className="bg-white/20 px-1 rounded text-[10px]">P</span>}
+                  {i < todayOffs.length - 1 && <span>,</span>}
+                </span>
+              ))}
+           </div>
+         )}
       </div>
       <div className="flex flex-col items-end gap-1">
         <div className={`bg-white/20 p-3 rounded-full transition-all duration-300 ${spin ? 'animate-spin-slow' : ''}`}>

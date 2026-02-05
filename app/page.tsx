@@ -93,10 +93,12 @@ export default function DentalLeaveApp() {
     getSundayLeaves,
     getTodayOffs,
     getCurrentMonthOffs,
+    getOverlapLeaves,
   } = useLeaveCalculations(staffData);
 
   const invalidLeaves = getInvalidLeaves();
   const sundayLeaves = getSundayLeaves();
+  const overlapLeaves = getOverlapLeaves();
   const isAdmin = (session as any)?.isAdmin;
 
   const handleLeaveClickWrapper = async (staffName: string, originalDate: string, dateYMD: string) => {
@@ -604,7 +606,7 @@ export default function DentalLeaveApp() {
                               statusMsg={statusMsg} 
                            />
                          </div>
-                           <MobileScheduleList 
+                              <MobileScheduleList 
                              leaves={getCurrentMonthLeaves()}
                              monthOffs={getCurrentMonthOffs()}
                              onRefresh={fetchSheetData}
@@ -618,6 +620,7 @@ export default function DentalLeaveApp() {
                              todayMonth={new Date().getMonth() + 1}
                              invalidLeaves={invalidLeaves}
                              sundayLeaves={sundayLeaves}
+                             overlapLeaves={overlapLeaves}
                              isAdmin={!!isAdmin}
                            />
 
@@ -633,32 +636,34 @@ export default function DentalLeaveApp() {
                                     statusMsg={statusMsg} 
                                   />
                              </div>
-                             <div className="col-span-2">
-                                  {(session as any)?.isAdmin && (invalidLeaves.length > 0 || sundayLeaves.length > 0) ? (
-                                     <WarningBanner 
-                                       session={session as any} 
-                                       invalidLeaves={invalidLeaves} 
-                                       sundayLeaves={sundayLeaves}
-                                       className="h-full mb-0 overflow-y-auto"
-                                     />
-                                  ) : (
-                                     <div className="h-full bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#F0EAE4] dark:border-[#333333] p-5 flex items-center justify-center text-[#A4907C] dark:text-[#C4B09C] font-medium transition-colors">
-                                        좋은 하루 보내세요 ☀️
-                                     </div>
-                                  )}
-                             </div>
+                            <div className="col-span-2">
+                                 {(session as any)?.isAdmin && (invalidLeaves.length > 0 || sundayLeaves.length > 0 || overlapLeaves.length > 0) ? (
+                                    <WarningBanner 
+                                      session={session as any} 
+                                      invalidLeaves={invalidLeaves} 
+                                      sundayLeaves={sundayLeaves}
+                                      overlapLeaves={overlapLeaves}
+                                      className="h-full mb-0 overflow-y-auto"
+                                    />
+                                 ) : (
+                                    <div className="h-full bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#F0EAE4] dark:border-[#333333] p-5 flex items-center justify-center text-[#A4907C] dark:text-[#C4B09C] font-medium transition-colors">
+                                       좋은 하루 보내세요 ☀️
+                                    </div>
+                                 )}
+                            </div>
                          </div>
                          
-                         <DesktopCalendar 
-                           viewDate={viewDate}
-                           setViewDate={setViewDate}
-                           staffData={staffData}
-                           session={session as any}
-                           invalidLeaves={invalidLeaves}
-                           sundayLeaves={sundayLeaves}
-                            handlers={{
-                              handleLeaveClick: handleLeaveClickWrapper,
-                              handleLeaveDelete: handleLeaveDeleteWrapper,
+                        <DesktopCalendar 
+                          viewDate={viewDate}
+                          setViewDate={setViewDate}
+                          staffData={staffData}
+                          session={session as any}
+                          invalidLeaves={invalidLeaves}
+                          sundayLeaves={sundayLeaves}
+                          overlapLeaves={overlapLeaves}
+                           handlers={{
+                             handleLeaveClick: handleLeaveClickWrapper,
+                             handleLeaveDelete: handleLeaveDeleteWrapper,
                               handleLeaveAdd: handleLeaveAddWrapper
                             }}
                             onRefresh={fetchSheetData}

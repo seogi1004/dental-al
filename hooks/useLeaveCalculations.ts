@@ -7,9 +7,10 @@ interface UseLeaveCalculationsReturn {
   getTodayLeaves: () => (Staff & { leaveType: LeaveType; original: string })[];
   getInvalidLeaves: () => { name: string; original: string; reason: string }[];
   getSundayLeaves: () => { name: string; original: string; date: string; reason: string }[];
-  getTodayOffs: () => { name: string; memo?: string }[];
+  getTodayOffs: () => { name: string; memo?: string; type?: 'AM' | 'PM' }[];
   getCurrentMonthOffs: () => OffItem[];
   getSundayOffs: () => { name: string; date: string; reason: string }[];
+  getOverlapLeaves: () => { name: string; date: string; reason: string }[];
 }
 
 export const useLeaveCalculations = (staffData: StaffData): UseLeaveCalculationsReturn => {
@@ -124,13 +125,19 @@ export const useLeaveCalculations = (staffData: StaffData): UseLeaveCalculations
 
   const getTodayOffs = useCallback(() => {
     const todayStr = getTodayString();
-    const list: { name: string; memo?: string }[] = [];
+    const list: { name: string; memo?: string; type?: 'AM' | 'PM' }[] = [];
     
     staffData.forEach(staff => {
       if (staff.offs) {
         staff.offs.forEach(off => {
           if (off.dateParsed === todayStr) {
-            list.push({ name: staff.name, memo: off.memo });
+            let type: 'AM' | 'PM' | undefined;
+            if (off.date.toUpperCase().includes('AM')) type = 'AM';
+            else if (off.date.toUpperCase().includes('PM')) type = 'PM';
+            else if (off.date.includes('오전')) type = 'AM';
+            else if (off.date.includes('오후')) type = 'PM';
+
+            list.push({ name: staff.name, memo: off.memo, type });
           }
         });
       }
@@ -150,11 +157,19 @@ export const useLeaveCalculations = (staffData: StaffData): UseLeaveCalculations
           const d = new Date(off.dateParsed);
           // 날짜 유효성 체크
           if (!isNaN(d.getTime()) && d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+            
+            let type: 'AM' | 'PM' | undefined;
+            if (off.date.toUpperCase().includes('AM')) type = 'AM';
+            else if (off.date.toUpperCase().includes('PM')) type = 'PM';
+            else if (off.date.includes('오전')) type = 'AM';
+            else if (off.date.includes('오후')) type = 'PM';
+
             offsList.push({
               name: staff.name,
               date: off.dateParsed,
               dateObj: d,
-              memo: off.memo
+              memo: off.memo,
+              type: type
             });
           }
         });
@@ -183,6 +198,45 @@ export const useLeaveCalculations = (staffData: StaffData): UseLeaveCalculations
     return sundayList;
   }, [staffData]);
 
+  const getOverlapLeaves = useCallback(() => {
+    const overlapList: { name: string; date: string; reason: string }[] = [];
+    staffData.forEach(staff => {
+      const offMap = new Map<string, 'AM' | 'PM' | 'FULL'>();
+      if (staff.offs) {
+        staff.offs.forEach(off => {
+            if(off.dateParsed) {
+               let type: 'AM' | 'PM' | 'FULL' = 'FULL';
+               if (off.date.toUpperCase().includes('AM')) type = 'AM';
+               else if (off.date.toUpperCase().includes('PM')) type = 'PM';
+               else if (off.date.includes('오전')) type = 'AM';
+               else if (off.date.includes('오후')) type = 'PM';
+               offMap.set(off.dateParsed, type);
+            }
+        });
+      }
+      
+      if (staff.leaves && offMap.size > 0) {
+        staff.leaves.forEach(leafObj => {
+          const { date, type: leaveType } = parseLeaveDate(leafObj.parsed);
+          if (date && offMap.has(date)) {
+             const offType = offMap.get(date);
+             // 중복 조건: 둘 중 하나라도 FULL이거나, 둘 다 같은 타입(AM/AM, PM/PM)인 경우
+             if (offType === 'FULL' || leaveType === 'FULL' || offType === leaveType) {
+                const offTypeStr = offType === 'FULL' ? '종일' : offType;
+                const leaveTypeStr = leaveType === 'FULL' ? '종일' : leaveType;
+                overlapList.push({
+                  name: staff.name,
+                  date: date,
+                  reason: `연차(${leaveTypeStr})와 오프(${offTypeStr})가 중복 등록되었습니다.`
+                });
+             }
+          }
+        });
+      }
+    });
+    return overlapList;
+  }, [staffData]);
+
   return {
     getCurrentMonthLeaves,
     getTodayLeaves,
@@ -190,6 +244,7 @@ export const useLeaveCalculations = (staffData: StaffData): UseLeaveCalculations
     getSundayLeaves,
     getTodayOffs,
     getCurrentMonthOffs,
-    getSundayOffs
+    getSundayOffs,
+    getOverlapLeaves
   };
 };

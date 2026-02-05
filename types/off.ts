@@ -10,4 +10,5 @@ export interface OffItem {
   date: string;        // YYYY-MM-DD
   dateObj: Date;
   memo?: string;
+  type?: 'AM' | 'PM';
 }
