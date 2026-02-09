@@ -129,7 +129,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       for (let i = 0; i < rows.length; i++) {
         if (rows[i][0]?.trim() === name.trim()) {
           const rowDate = normalizeToMMDD(rows[i][1]);
-          if (rowDate === targetDate) {
+          if (rowDate.startsWith(targetDate)) {
             rowIndexToUpdate = i;
             break;
           }
@@ -186,7 +186,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const rawRowDate = rows[i][1];
           const rowDate = normalizeToMMDD(rawRowDate);
           
-          if (rowDate === targetDate) {
+          if (rowDate.startsWith(targetDate)) {
             rowIndexToDelete = i;
             break;
           }
