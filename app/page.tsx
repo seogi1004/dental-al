@@ -18,9 +18,11 @@ import { WarningBanner } from '@/components/DesktopCalendar';
 import { useSheetData, useLeaveCalculations } from '@/hooks';
 import { addLeave, updateLeave, deleteLeave, addOff } from '@/services';
 import { MESSAGES } from '@/lib/messages';
+import { useModal } from '@/components/providers/modal-provider';
 
 // Main Dashboard Component handling leave and off management
 export default function DentalLeaveApp() {
+  const { openModal } = useModal();
   const { data: session, status } = useSession();
   const { theme: currentTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -104,46 +106,39 @@ export default function DentalLeaveApp() {
   const handleLeaveClickWrapper = async (staffName: string, originalDate: string, dateYMD: string) => {
     if (!isAdmin) return;
     
-    let displayDate = originalDate;
-    try {
-      if (dateYMD) {
-        const d = new Date(dateYMD);
-        if (!isNaN(d.getTime())) {
-          const mm = String(d.getMonth() + 1);
-          const dd = String(d.getDate());
-          displayDate = `${mm}/${dd}`;
-          if (String(originalDate).toUpperCase().includes('AM')) displayDate += ' AM';
-          else if (String(originalDate).toUpperCase().includes('PM')) displayDate += ' PM';
-        }
+    let initialDate = new Date();
+    if (dateYMD) {
+      initialDate = new Date(dateYMD);
+    } else {
+      // Fallback if dateYMD is missing (try to parse originalDate M/D)
+      const parts = originalDate.replace(/[^0-9\/]/g, '').split('/');
+      if (parts.length === 2) {
+        initialDate = new Date();
+        initialDate.setMonth(parseInt(parts[0]) - 1);
+        initialDate.setDate(parseInt(parts[1]));
       }
-    } catch(e) {}
-    
-    const newValue = prompt(MESSAGES.leave.edit.prompt(displayDate), displayDate);
-    if (newValue === null) return;
-    if (newValue.trim() === '' || newValue.trim() === originalDate) return;
-    
-    let processedValue = newValue.trim().toUpperCase();
-    processedValue = processedValue.replace('오전', 'AM').replace('오후', 'PM');
-    if (processedValue.endsWith(' A')) processedValue = processedValue.slice(0, -2) + ' AM';
-    if (processedValue.endsWith(' P')) processedValue = processedValue.slice(0, -2) + ' PM';
-    
-    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM))?$/i;
-    if (!datePattern.test(processedValue)) {
-      alert(MESSAGES.validation.invalidDate);
-      return;
     }
-    
-    try {
-      await updateLeave(staffName, originalDate, processedValue);
-      fetchSheetData();
-    } catch (e: any) {
-      console.error(e);
-      if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
-        signOut({ callbackUrl: '/' });
-        return;
-      }
-      alert(MESSAGES.leave.edit.failure(e.message));
-    }
+
+    let leaveType = "종일";
+    if (originalDate.includes("AM") || originalDate.includes("오전")) leaveType = "오전";
+    if (originalDate.includes("PM") || originalDate.includes("오후")) leaveType = "오후";
+
+    openModal({
+      mode: "edit",
+      defaultTab: "leave",
+      initialData: {
+        category: "leave",
+        staffName,
+        date: initialDate,
+        leaveType: leaveType as any,
+      },
+      meta: {
+        originalName: staffName,
+        originalDate: originalDate,
+      },
+      staffData,
+      onSuccess: fetchSheetData,
+    });
   };
 
   const handleLeaveDeleteWrapper = async (staffName: string, originalDate: string) => {
@@ -169,166 +164,49 @@ export default function DentalLeaveApp() {
   const handleLeaveAddWrapper = async (dateStr: string) => {
     if (!isAdmin) return;
     
-    const staffNames = staffData.map(s => s.name).join(', ');
-    const selectedName = prompt(MESSAGES.leave.add.namePrompt(staffNames));
-    if (!selectedName) return;
-    
-    const staff = staffData.find(s => s.name === selectedName.trim());
-    if (!staff) {
-      alert(MESSAGES.staff.notFound);
-      return;
-    }
-    
-    const d = new Date(dateStr);
-    const mm = String(d.getMonth() + 1);
-    const dd = String(d.getDate());
-    const baseDate = `${mm}/${dd}`;
-    
-    const typeInput = prompt(MESSAGES.leave.add.typePrompt, "");
-    if (typeInput === null) return;
-    
-    let typeUpper = typeInput.trim().toUpperCase();
-    
-    if (['A', 'AM', '오전'].includes(typeUpper)) typeUpper = 'AM';
-    else if (['P', 'PM', '오후'].includes(typeUpper)) typeUpper = 'PM';
-    
-    if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
-      alert(MESSAGES.validation.invalidType);
-      return;
-    }
-    
-    const existingLeave = staff.leaves?.find(leafObj => {
-      const { date } = parseLeaveDate(leafObj.parsed);
-      return date === dateStr;
+    openModal({
+      mode: "add",
+      defaultTab: "leave",
+      initialData: {
+        category: "leave",
+        date: new Date(dateStr),
+        leaveType: "종일",
+      },
+      staffData,
+      onSuccess: fetchSheetData,
     });
-    
-    if (existingLeave) {
-      alert(MESSAGES.leave.add.alreadyExists(staff.name, existingLeave.original));
-      return;
-    }
-    
-    const finalDate = typeUpper ? `${baseDate} ${typeUpper}` : baseDate;
-    
-    try {
-      await addLeave(staff.name, finalDate);
-      fetchSheetData();
-    } catch (e: any) {
-      console.error(e);
-      if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
-        signOut({ callbackUrl: '/' });
-        return;
-      }
-      alert(MESSAGES.leave.add.failure(e.message));
-    }
   };
 
   const handleMobileLeaveAdd = async () => {
     if (!isAdmin) return;
     
-    const staffNames = staffData.map(s => s.name).join(', ');
-    const selectedName = prompt(MESSAGES.leave.add.namePrompt(staffNames));
-    if (!selectedName) return;
-    
-    const staff = staffData.find(s => s.name === selectedName.trim());
-    if (!staff) {
-      alert(MESSAGES.staff.notFound);
-      return;
-    }
-    
-    // 모바일: 날짜는 오늘로 고정
-    const today = new Date();
-    const mm = String(today.getMonth() + 1);
-    const dd = String(today.getDate());
-    const baseDate = `${mm}/${dd}`;
-    
-    // 타입 선택 (종일/오전/오후)
-    const typeInput = prompt(MESSAGES.leave.add.typePrompt, "");
-    if (typeInput === null) return;
-    
-    let typeUpper = typeInput.trim().toUpperCase();
-    
-    // Normalize input
-    if (['A', 'AM', '오전'].includes(typeUpper)) typeUpper = 'AM';
-    else if (['P', 'PM', '오후'].includes(typeUpper)) typeUpper = 'PM';
-    
-    if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
-      alert(MESSAGES.validation.invalidType);
-      return;
-    }
-
-    const existingLeave = staff.leaves?.find(leafObj => {
-      const { date } = parseLeaveDate(leafObj.parsed);
-      // 오늘 날짜와 비교 (M-D 포맷 매칭이 필요할 수 있음. parseLeaveDate는 YYYY-MM-DD 반환)
-      // 간단히:
-      const todayYMD = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-      return date === todayYMD;
+    openModal({
+      mode: "add",
+      defaultTab: "leave",
+      initialData: {
+        category: "leave",
+        date: new Date(),
+        leaveType: "종일",
+      },
+      staffData,
+      onSuccess: fetchSheetData,
     });
-    
-    if (existingLeave) {
-      alert(MESSAGES.leave.add.alreadyExists(staff.name, existingLeave.original));
-      return;
-    }
-    
-    const finalDate = typeUpper ? `${baseDate} ${typeUpper}` : baseDate;
-    
-    try {
-      await addLeave(staff.name, finalDate);
-      fetchSheetData();
-    } catch (e: any) {
-      console.error(e);
-      if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
-        signOut({ callbackUrl: '/' });
-        return;
-      }
-      alert(MESSAGES.leave.add.failure(e.message));
-    }
   };
 
   const handleMobileOffAdd = async () => {
     if (!isAdmin) return;
     
-    const staffNames = staffData.map(s => s.name).join(', ');
-    const selectedName = prompt(MESSAGES.off.add.namePrompt(staffNames));
-    if (!selectedName) return;
-    
-    const staff = staffData.find(s => s.name === selectedName.trim());
-    if (!staff) {
-      alert(MESSAGES.staff.notFound);
-      return;
-    }
-    
-    // 모바일: 날짜는 오늘로 고정
-    const today = new Date();
-    const mm = String(today.getMonth() + 1);
-    const dd = String(today.getDate());
-    const dateInput = `${mm}/${dd}`;
-    
-    const typeInput = prompt(MESSAGES.off.add.typePrompt, "");
-    if (typeInput === null) return;
-    
-    let typeUpper = typeInput.trim().toUpperCase();
-    
-    if (['A', 'AM', '오전'].includes(typeUpper)) typeUpper = 'AM';
-    else if (['P', 'PM', '오후'].includes(typeUpper)) typeUpper = 'PM';
-    
-    if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
-      alert(MESSAGES.validation.invalidType);
-      return;
-    }
-
-    const finalDate = typeUpper ? `${dateInput} ${typeUpper}` : dateInput;
-    
-    try {
-      await addOff(staff.name, finalDate);
-      fetchSheetData();
-    } catch (e: any) {
-      console.error(e);
-      if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
-        signOut({ callbackUrl: '/' });
-        return;
-      }
-      alert(MESSAGES.off.add.failure(e.message));
-    }
+    openModal({
+      mode: "add",
+      defaultTab: "off",
+      initialData: {
+        category: "off",
+        date: new Date(),
+        memo: "",
+      },
+      staffData,
+      onSuccess: fetchSheetData,
+    });
   };
 
   const addStaff = () => {
@@ -637,6 +515,7 @@ export default function DentalLeaveApp() {
                              sundayLeaves={sundayLeaves}
                              overlapLeaves={overlapLeaves}
                              isAdmin={!!isAdmin}
+                             staffData={staffData}
                            />
 
                       </div>

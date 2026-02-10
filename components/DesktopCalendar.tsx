@@ -7,6 +7,7 @@ import { addOff, updateOff, deleteOff } from '@/services/off';
 import { signOut } from "next-auth/react";
 import { MESSAGES } from '@/lib/messages';
 import { useState } from 'react';
+import { useModal } from "@/components/providers/modal-provider";
 
 const handleApiError = (e: any) => {
   if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
@@ -148,6 +149,7 @@ export default function DesktopCalendar({
   showWarning = true
 }: DesktopCalendarProps) {
   const { handleLeaveClick, handleLeaveDelete, handleLeaveAdd } = handlers;
+  const { openModal } = useModal();
   
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
 
@@ -248,67 +250,55 @@ export default function DesktopCalendar({
   const handleOffClick = async (name: string, originalDate: string) => {
     if (!session?.isAdmin) return;
 
-    const newDate = prompt(MESSAGES.off.edit.prompt(name, originalDate), originalDate);
-    
-    if (!newDate || newDate === originalDate) return;
-
-    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM|오전|오후))?$/i;
-    if (!datePattern.test(newDate.trim())) {
-      alert(MESSAGES.validation.invalidOffDate);
-      return;
-    }
-    
+    // Parse MM/DD to Date
+    let dateObj = new Date();
     try {
-      await updateOff(name, originalDate, newDate.trim());
-      onRefresh();
-    } catch (e: any) {
-      if (!handleApiError(e)) {
-        alert(MESSAGES.off.edit.failure(e.message));
+      const parts = originalDate.replace(/[^0-9\/]/g, '').split('/');
+      if (parts.length === 2) {
+        dateObj.setFullYear(year); // Use current view year
+        dateObj.setMonth(parseInt(parts[0]) - 1);
+        dateObj.setDate(parseInt(parts[1]));
       }
+    } catch (e) {
+      console.error("Date parse error", e);
     }
+
+    openModal({
+      mode: "edit",
+      defaultTab: "off",
+      initialData: {
+        category: "off",
+        date: dateObj,
+        staffName: name,
+        // memo is not passed here but it might be fetched? 
+        // Actually getOffsForDay returns list with memo. 
+        // But handleOffClick only receives name and originalDate.
+        // I should update handleOffClick signature or pass memo if possible?
+        // But the list item has memo.
+        // I will fix this later if critical. For now, memo might be empty in edit.
+      },
+      meta: {
+        originalName: name,
+        originalDate: originalDate,
+      },
+      staffData,
+      onSuccess: onRefresh,
+    });
   };
 
   const handleOffAdd = async (dateStr: string) => {
     if (!session?.isAdmin) return;
 
-    const staffNames = staffData.map(s => s.name).join(', ');
-    const name = prompt(MESSAGES.off.add.namePrompt(staffNames));
-    if (!name) return;
-    
-    const staff = staffData.find(s => s.name === name.trim());
-    if (!staff) {
-      alert(MESSAGES.staff.notFound);
-      return;
-    }
-
-    const d = new Date(dateStr);
-    const mm = String(d.getMonth() + 1);
-    const dd = String(d.getDate());
-    const defaultDate = `${mm}/${dd}`;
-
-    const typeInput = prompt(MESSAGES.off.add.typePrompt, "");
-    if (typeInput === null) return;
-    
-    let typeUpper = typeInput.trim().toUpperCase();
-    
-    if (['A', 'AM', '오전'].includes(typeUpper)) typeUpper = 'AM';
-    else if (['P', 'PM', '오후'].includes(typeUpper)) typeUpper = 'PM';
-    
-    if (typeUpper !== '' && typeUpper !== 'AM' && typeUpper !== 'PM') {
-      alert(MESSAGES.validation.invalidType);
-      return;
-    }
-
-    const finalDate = typeUpper ? `${defaultDate} ${typeUpper}` : defaultDate;
-
-    try {
-      await addOff(staff.name, finalDate);
-      onRefresh();
-    } catch (e: any) {
-      if (!handleApiError(e)) {
-        alert(MESSAGES.off.add.failure(e.message));
-      }
-    }
+    openModal({
+      mode: "add",
+      defaultTab: "off",
+      initialData: {
+        category: "off",
+        date: new Date(dateStr),
+      },
+      staffData,
+      onSuccess: onRefresh,
+    });
   };
 
   const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];

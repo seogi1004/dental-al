@@ -8,6 +8,8 @@ import { signOut } from "next-auth/react";
 import { WarningBanner } from './DesktopCalendar';
 import { MESSAGES } from '@/lib/messages';
 import { useState, useEffect } from 'react';
+import { useModal } from "@/components/providers/modal-provider";
+import { Staff } from "@/types";
 
 const handleApiError = (e: any) => {
   if (e.message && (e.message.includes('invalid authentication') || e.message.includes('credentials'))) {
@@ -43,6 +45,7 @@ interface MobileScheduleListProps {
   onLeaveAdd?: () => void;
   onOffAdd?: () => void;
   isAdmin?: boolean;
+  staffData: Staff[];
 }
 
 export default function MobileScheduleList({
@@ -60,8 +63,10 @@ export default function MobileScheduleList({
   overlapLeaves = [],
   onLeaveAdd,
   onOffAdd,
-  isAdmin = false
+  isAdmin = false,
+  staffData
 }: MobileScheduleListProps) {
+  const { openModal } = useModal();
   const [showPastItems, setShowPastItems] = useState(false);
 
   useEffect(() => {
@@ -140,31 +145,22 @@ export default function MobileScheduleList({
   const handleOffClick = async (name: string, date: string, memo?: string) => {
     if (!isAdmin) return;
 
-    let displayDate = date;
-    try {
-      const [y, m, d] = date.split('-');
-      if (y && m && d) displayDate = `${parseInt(m, 10)}/${parseInt(d, 10)}`;
-    } catch(e) {}
-
-    const newDateInput = prompt(MESSAGES.off.edit.mobilePrompt, displayDate);
-    
-    if (!newDateInput || newDateInput === displayDate) return;
-
-    const datePattern = /^(0?[1-9]|1[0-2])\/(0?[1-9]|[12][0-9]|3[01])(\s+(AM|PM|오전|오후))?$/i;
-    if (!datePattern.test(newDateInput.trim())) {
-      alert(MESSAGES.validation.invalidOffDate);
-      return;
-    }
-      
-    try {
-      await updateOff(name, date, newDateInput.trim(), memo);
-      alert(MESSAGES.off.edit.success);
-      onRefresh();
-    } catch (error: any) {
-      if (!handleApiError(error)) {
-        alert(MESSAGES.off.edit.failure(error.message));
-      }
-    }
+    openModal({
+      mode: "edit",
+      defaultTab: "off",
+      initialData: {
+        category: "off",
+        date: new Date(date),
+        staffName: name,
+        memo: memo,
+      },
+      meta: {
+        originalName: name,
+        originalDate: date,
+      },
+      staffData,
+      onSuccess: onRefresh,
+    });
   };
 
   const handleOffDelete = async (name: string, date: string) => {
