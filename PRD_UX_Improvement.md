@@ -13,43 +13,71 @@
 ## 3. 목표 (Goals)
 *   **Shadcn UI 도입**: 브라우저 기본 `prompt` 창을 제거하고, **Shadcn UI (Radix UI + Tailwind CSS)** 기반의 모던한 모달 컴포넌트로 전면 교체합니다.
 *   **입력 편의성 증대**: `Calendar`, `Select`, `RadioGroup` 등 직관적인 UI 컴포넌트를 활용하여 텍스트 입력을 최소화하고 오류를 방지합니다.
-*   **통합된 경험 제공**: 연차와 오프 추가/수정을 일관된 UI(OffModal)에서 처리하여 학습 곡선을 낮춥니다.
+*   **통합된 경험 제공**: 연차/오프(그리고 향후 식대)를 **단일 모달(OffModal)**에서 일관된 흐름으로 처리하여 학습 곡선을 낮춥니다.
+*   **확장 가능한 아키텍처 (Extensible Architecture)**: 모달의 최상위 구조를 **`Tabs`(Shadcn UI)** 로 고정하고, 각 탭의 폼/필드를 “탭 단위로 분리”할 수 있는 레이아웃을 채택합니다. 신규 일정 타입은 탭 추가만으로 확장 가능해야 합니다.
 *   **접근성 및 디자인**: Radix UI의 웹 접근성 준수와 Tailwind CSS의 유연한 스타일링을 통해 완성도 높은 UX를 제공합니다.
 
 ## 4. 주요 기능 요구사항 (Key Feature Requirements)
 
 ### 4.1 통합 일정 관리 모달 (Unified Schedule Modal: `OffModal`)
-연차 및 오프를 추가하거나 수정할 때 사용할 `OffModal` 컴포넌트를 Shadcn UI 컴포넌트로 조립하여 구현합니다.
+연차/오프를 추가하거나 수정할 때 사용할 `OffModal` 컴포넌트를 Shadcn UI 컴포넌트로 조립하여 구현합니다.
+**모달 내부의 최상위 구조는 `Tabs`로 고정**하며, 탭 추가만으로 일정 타입을 확장할 수 있는 레이아웃을 기본 전제로 합니다.
 
 *   **진입점 (Entry Points)**:
     *   **데스크탑**: 캘린더 날짜의 `+` 버튼(연차), `OFF` 버튼(오프) 클릭 시.
     *   **모바일**: 일정 리스트 상단의 `연차 추가`, `오프 추가` 버튼 클릭 시.
     *   **수정 시**: 기존 일정 아이템 클릭 시.
+    *   **탭 기본값 규칙**: 진입점에 따라 `Tabs`의 `defaultValue`를 설정합니다. (예: 연차 추가 → `leave`, 오프 추가 → `off`)
 
-*   **상세 UI 구성 (Shadcn Components)**:
+*   **상세 UI 구성 (Shadcn Components / Extensible Layout)**:
     1.  **Container**: `Dialog`
         *   `DialogContent`: 모달 본문.
         *   `DialogHeader` > `DialogTitle`: "일정 추가" / "일정 수정".
-    2.  **Form**: `Form` (react-hook-form Provider) -> `form.handleSubmit`.
-    3.  **Fields**:
-        *   **Type Switch**: `Tabs` 또는 `RadioGroup` (UI에 따라 결정)으로 [연차/오프] 전환.
-        *   **Staff**: `FormField` > `FormItem` > `Select` (직원 목록 드롭다운).
-        *   **Date**: `FormField` > `FormItem` > `Popover` (Trigger as Button) > `Calendar` (Content).
-        *   **Leave Type** (연차 시): `FormField` > `RadioGroup` (종일/오전/오후).
-        *   **Memo**: `FormField` > `Input` 또는 `Textarea` (비고/사유).
+    2.  **Form**: `Form` (react-hook-form Provider) -> `form.handleSubmit`
+        *   **권장 레이아웃**: `Form` 내부에 `Tabs`를 배치하고, `TabsContent` 단위로 “탭별 필드 묶음”을 구성합니다.
+    3.  **Type Tabs (반드시 Tabs로 고정)**: `Tabs`
+        *   `TabsList` + `TabsTrigger`
+            *   `leave`: `연차`
+            *   `off`: `오프`
+            *   `meal`: `식대(준비중)` **(Disabled / Prepare for future)** → `TabsTrigger`에 `disabled` 적용
+        *   `TabsContent` (탭별 UI)
+            *   **연차 탭 (`leave`)**
+                *   **Staff**: `FormField` > `FormItem` > `Select` (직원 목록 드롭다운).
+                *   **Date**: `FormField` > `FormItem` > `Popover` (Trigger as Button) > `Calendar` (Content).
+                *   **Leave Type**: `FormField` > `RadioGroup` (종일/오전/오후).
+                *   **Memo**: `FormField` > `Input` 또는 `Textarea` (비고/사유).
+            *   **오프 탭 (`off`)**
+                *   **Staff**: `Select`
+                *   **Date**: `Popover` + `Calendar`
+                *   **Memo**: `Input` 또는 `Textarea` (오프 사유/메모)
+                *   (오프는 탭 선택 자체가 타입이므로 별도 “OFF 선택” UI는 두지 않습니다.)
+            *   **식대 탭 (`meal`, Disabled)**
+                *   사용자에게는 선택 불가한 **비활성 탭(준비중)** 으로만 노출합니다.
+                *   목적: “향후 식비/식대 관리 UI”가 동일 모달 구조에 자연스럽게 추가될 수 있음을 PRD에 명시하는 **플레이스홀더**입니다.
     4.  **Footer**:
         *   `DialogFooter`: `Button` (Cancel/Submit/Delete).
+        *   (식대 탭은 Disabled이므로 저장 플로우에 포함하지 않습니다.)
 
-*   **Validation Schema (Zod Example)**:
+*   **Validation Schema (Zod Example, Tabs 확장 대비)**:
     ```typescript
-    const formSchema = z.object({
-      staffName: z.string().min(1, "직원을 선택해주세요."),
-      date: z.date({ required_error: "날짜를 선택해주세요." }),
-      type: z.enum(["종일", "오전", "오후", "OFF"], {
-        required_error: "일정 타입을 선택해주세요.",
+    const formSchema = z.discriminatedUnion("category", [
+      z.object({
+        category: z.literal("leave"),
+        staffName: z.string().min(1, "직원을 선택해주세요."),
+        date: z.date({ required_error: "날짜를 선택해주세요." }),
+        leaveType: z.enum(["종일", "오전", "오후"], {
+          required_error: "연차 타입을 선택해주세요.",
+        }),
+        memo: z.string().optional(),
       }),
-      memo: z.string().optional(), // 오프일 경우 사유 등
-    });
+      z.object({
+        category: z.literal("off"),
+        staffName: z.string().min(1, "직원을 선택해주세요."),
+        date: z.date({ required_error: "날짜를 선택해주세요." }),
+        memo: z.string().optional(),
+      }),
+      // category: "meal" 은 현재 UI가 Disabled(준비중)이므로 스키마/저장 로직에서 제외합니다.
+    ]);
     ```
 
 ### 4.2 유효성 검사 및 피드백 (Validation & Feedback)
@@ -67,6 +95,7 @@
 *   **Core UI Library**: Shadcn UI (Radix UI + Tailwind CSS)
 *   **Required Shadcn Components**:
     *   `Dialog`: 모달 컨테이너.
+    *   `Tabs`: 일정 타입(연차/오프/식대[준비중]) 확장을 위한 최상위 내비게이션.
     *   `Calendar`: 날짜 선택기.
     *   `Select`: 직원 선택 드롭다운.
     *   `RadioGroup`: 연차 타입(종일/반차) 선택.
@@ -91,7 +120,7 @@
 ### 5.2 구현 전략 (Implementation Strategy)
 1.  **초기 설정**: `npx shadcn-ui@latest init`으로 프로젝트 설정 및 `utils` (cn 함수 등) 구성.
 2.  **컴포넌트 설치**: 필요한 컴포넌트 개별 추가.
-    *   `npx shadcn-ui@latest add dialog button input select calendar popover radio-group form label`
+    *   `npx shadcn-ui@latest add dialog tabs button input select calendar popover radio-group form label`
 3.  **기존 로직 대체**:
     *   `window.prompt` -> `Dialog` + `Form` (Input)
     *   `window.confirm` -> `AlertDialog`
@@ -112,3 +141,4 @@
 *   다건 일괄 등록 기능 (여러 날짜 또는 여러 직원 동시 선택).
 *   `Drawer` 컴포넌트 도입을 통한 모바일 경험 추가 개선.
 *   연차 사용 내역 통계 그래프 시각화 강화.
+*   **식비/식대 관리 기능 구현**: 현재 `Disabled` 상태인 식대 탭의 기능 구현 (영수증 첨부, 금액 입력 등).
