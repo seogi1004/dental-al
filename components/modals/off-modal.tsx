@@ -54,23 +54,40 @@ export function OffModal() {
 
   const defaultCategory = (defaultTab || "leave") as "leave" | "off"
 
+  const defaultValues: Partial<OffModalFormValues> = defaultCategory === "leave" 
+    ? {
+        category: "leave",
+        leaveType: "종일",
+        memo: "",
+        ...initialData
+      }
+    : {
+        category: "off",
+        memo: "",
+        ...initialData
+      };
+
   const form = useForm<OffModalFormValues>({
     resolver: zodResolver(offModalSchema),
-    defaultValues: {
-      category: defaultCategory,
-      leaveType: "종일",
-      ...initialData,
-    },
+    defaultValues,
   })
 
   useEffect(() => {
     if (isOpen) {
-      form.reset({
-        category: defaultCategory,
-        leaveType: "종일",
-        memo: "",
-        ...initialData,
-      })
+      if (defaultCategory === "leave") {
+        form.reset({
+          category: "leave",
+          leaveType: "종일",
+          memo: "",
+          ...initialData,
+        } as OffModalFormValues)
+      } else {
+        form.reset({
+          category: "off",
+          memo: "",
+          ...initialData,
+        } as OffModalFormValues)
+      }
     }
   }, [isOpen, defaultTab, initialData, form, defaultCategory])
 
