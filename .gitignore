@@ -9,3 +9,4 @@ node_modules
 public/sw.js
 public/workbox-*.js
 public/worker-*.js
+.sisyphus
