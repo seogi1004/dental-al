@@ -166,6 +166,12 @@ export default function DesktopCalendar({
 
   const getLeavesForDay = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (dateStr < todayStr) {
+      return [];
+    }
+
     const list: Array<{
       name: string;
       role: string;
