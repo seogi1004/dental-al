@@ -632,7 +632,6 @@ export default function DentalLeaveApp() {
                              session={session as any}
                              getTodayString={getTodayString}
                              formatDate={formatDate}
-                             todayMonth={new Date().getMonth() + 1}
                              invalidLeaves={invalidLeaves}
                              sundayLeaves={sundayLeaves}
                              overlapLeaves={overlapLeaves}

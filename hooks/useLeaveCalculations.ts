@@ -16,8 +16,9 @@ interface UseLeaveCalculationsReturn {
 export const useLeaveCalculations = (staffData: StaffData): UseLeaveCalculationsReturn => {
   const getCurrentMonthLeaves = useCallback((): LeaveItem[] => {
     const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
+    today.setHours(0, 0, 0, 0);
+    const oneMonthLater = new Date(today);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
 
     const leavesList: LeaveItem[] = [];
     staffData.forEach(staff => {
@@ -28,7 +29,8 @@ export const useLeaveCalculations = (staffData: StaffData): UseLeaveCalculations
           
           if (date && isValidDate(date)) {
             const d = new Date(date);
-            if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+            d.setHours(0, 0, 0, 0);
+            if (d >= today && d <= oneMonthLater) {
               leavesList.push({
                 original: leafObj.original,
                 date: date,
@@ -147,16 +149,18 @@ export const useLeaveCalculations = (staffData: StaffData): UseLeaveCalculations
 
   const getCurrentMonthOffs = useCallback((): OffItem[] => {
     const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
+    today.setHours(0, 0, 0, 0);
+    const oneMonthLater = new Date(today);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
     
     const offsList: OffItem[] = [];
     staffData.forEach(staff => {
       if (staff.offs) {
         staff.offs.forEach(off => {
           const d = new Date(off.dateParsed);
+          d.setHours(0, 0, 0, 0);
           // 날짜 유효성 체크
-          if (!isNaN(d.getTime()) && d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+          if (!isNaN(d.getTime()) && d >= today && d <= oneMonthLater) {
             
             let type: 'AM' | 'PM' | undefined;
             if (off.date.toUpperCase().includes('AM')) type = 'AM';

@@ -36,7 +36,6 @@ interface MobileScheduleListProps {
   } | null;
   getTodayString: () => string;
   formatDate: (dateStr: string) => string;
-  todayMonth: number;
   invalidLeaves: Array<{ name: string; original: string }>;
   sundayLeaves: Array<{ name: string; original: string }>;
   overlapLeaves?: Array<{ name: string; date: string }>;
@@ -54,7 +53,6 @@ export default function MobileScheduleList({
   session, 
   getTodayString,
   formatDate,
-  todayMonth,
   invalidLeaves,
   sundayLeaves,
   overlapLeaves = [],
@@ -186,7 +184,7 @@ export default function MobileScheduleList({
     <div className="bg-white dark:bg-[#1E1E1E] p-5 rounded-2xl shadow-sm border border-[#F0EAE4] dark:border-[#333333] mb-6 transition-colors duration-300">
       <h3 className="text-[#5C5552] dark:text-[#E0E0E0] font-bold mb-4 flex items-center justify-between text-lg">
         <div className="flex items-center gap-2">
-          <CalendarDays className="w-5 h-5 text-[#8D7B68] dark:text-[#A4907C]"/> {todayMonth}월 일정
+          <CalendarDays className="w-5 h-5 text-[#8D7B68] dark:text-[#A4907C]"/> 앞으로 30일 일정
         </div>
         {isAdmin && (
           <div className="flex items-center gap-2">
@@ -230,7 +228,7 @@ export default function MobileScheduleList({
       
       {combinedList.length === 0 ? (
         <div className="text-center py-6 text-[#A4907C] dark:text-[#8D7B68] text-sm bg-[#FDFBF7] dark:bg-[#121212] rounded-xl transition-colors duration-300">
-          이번 달 예정된 일정이 없습니다.
+          앞으로 30일간 예정된 일정이 없습니다.
         </div>
       ) : (
         <div className="space-y-3">
